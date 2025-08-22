@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" href="./icons/bui.ico">
+	<!-- https://pwa-workshop.js.org/1-manifest/#manifest-fields -->
+	<link rel="manifest" href="manifest.json">
+
+	<title>Панель управления</title>
+	<meta name="description" content="Панель управления для Node-RED">
+
+	<!-- CSS -->
+	<link type="text/css" rel="stylesheet" href="./index.css" media="all">
+
+	<!-- NOTE this MUST be loaded as a MODULE. Also, uib client loaded in index not here -->
+	<script type="module" async src="./index.mjs">/* Your custom code + Imports uibuilder */</script>
+	<!-- Виджеты BUI -->
+	<script type="module" src="./widgets/all.js"></script>
+
+</head>
+
+<body>
+	<bui-book id="bui_book" tab-style="bottom">
+		<bui-page slot="pages" id="page0" role="page" class="panel-background-cell" number-cells="20" active>
+			<bui-sticker size="4 2" id="st1">
+				<bui-number value="5.456" fixed="1" size="2 2" position="0 0" id="n1">3</bui-number>
+			</bui-sticker>
+			<bui-sticker size="3 3" id="st2">
+				<bui-number value="3.1415926" fixed="3" style="--color: red; --font-size: 1.2em;"></bui-number>
+			</bui-sticker>
+		</bui-page>
+	</bui-book>
+</body>
+
+</html>

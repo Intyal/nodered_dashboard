@@ -1,0 +1,20 @@
+/* Load defaults from `<userDir>/node_modules/node-red-contrib-uibuilder/front-end/uib-brand.min.css`
+ * This is optional but reasonably complete and allows for light/dark mode switching.
+ */
+@import url("./css/dark.css");
+
+html, body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+html {
+	/* 10px */
+	font-size: 62.5%;
+}
+
+body {
+	background: var(--bui-background-color);
+	margin: 0px;
+}

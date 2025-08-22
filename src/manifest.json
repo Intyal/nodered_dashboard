@@ -1,0 +1,35 @@
+{
+    "name": "Барабашка Node-RED UI",
+    "short_name": "Барабашка",
+    "start_url": "/dashboard",
+    "lang": "ru",
+    "display": "fullscreen",
+    "prefer_related_applications": false,
+    "icons": [
+      {
+        "src": "images/bui_logo.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      },
+      {
+        "src": "images/bui.png",
+        "sizes": "256x256",
+        "type": "image/png"
+      }
+    ],
+    "screenshots": [
+      {
+        "src": "images/screenshot.png",
+         "sizes": "1024x768",
+         "type": "image/png",
+         "label": "Simple UI"
+      },
+      {
+       "src": "images/screenshot.png",
+        "sizes": "1024x768",
+        "type": "image/png",
+        "form_factor": "wide",
+        "label": "Simple UI"
+      }
+    ]
+  }
