@@ -63,6 +63,7 @@ export class WidgetBase extends HTMLElement {
 	 */
 	static register(tagName = '') {
 		const name = tagName || this.name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+		console.log(`Компонент "${name}" зарегистрирован.`);
 		if (!name.includes('-')) {
 			throw new Error(`Имя тега "${name}" должно содержать дефис.`);
 		}
@@ -121,6 +122,7 @@ export class WidgetBase extends HTMLElement {
 				return !!value;
 			},
 			Array: (value) => {
+				if (Array.isArray(value)) return value;
 				try {
 					return value === null || value === '' ? [] : JSON.parse(value);
 				} catch (e) {
@@ -129,6 +131,7 @@ export class WidgetBase extends HTMLElement {
 				}
 			},
 			Object: (value) => {
+				if (Object.prototype.toString.call(obj).slice(8, -1) === 'Object') return value;
 				try {
 					return value === null || value === '' ? {} : JSON.parse(value);
 				} catch (e) {
@@ -137,6 +140,7 @@ export class WidgetBase extends HTMLElement {
 				}
 			},
 			Date: (value) => {
+				if (Object.prototype.toString.call(obj).slice(8, -1) === 'Date') return value;
 				try {
 					return value ? new Date(value) : new Date();
 				} catch (e) {
@@ -196,6 +200,7 @@ export class WidgetBase extends HTMLElement {
 		this._stylesUser = new CSSStyleSheet();
 		this._stylesUser.replaceSync(':host {}');
 		this._updatePending = false;
+		this._updateDebounce = null;
 		this._pendingChanges = new Map();
 		this._hasRendered = false;
 		this._hasFirstUpdated = false;
@@ -281,19 +286,24 @@ export class WidgetBase extends HTMLElement {
 	 */
 	_applyStyles() {
 		const Ctor = this.constructor;
-		let sheet = WidgetBase._sharedStyles.get(Ctor);
+		let sheets = WidgetBase._sharedStyles.get(Ctor);
 
-		if (!sheet) {
+		if (!sheets) {
 			const styles = typeof Ctor.styles === 'function'
 				? Ctor.styles.call(this)
 				: (Ctor.styles || '');
 
-			sheet = new CSSStyleSheet();
-			sheet.replaceSync(styles);
-			WidgetBase._sharedStyles.set(Ctor, sheet);
+			const styleArray = Array.isArray(styles) ? styles : [styles];
+			sheets = styleArray.map(style => {
+				const sheet = new CSSStyleSheet();
+				const styleContent = typeof style === 'function' ? style.call(this) : style;
+				sheet.replaceSync(styleContent || '');
+				return sheet;
+			});
+			WidgetBase._sharedStyles.set(Ctor, sheets);
 		}
 
-		this._shadowRoot.adoptedStyleSheets = [sheet, this._stylesUser];
+		this._shadowRoot.adoptedStyleSheets = [...sheets, this._stylesUser];
 	}
 
 	/**
@@ -352,14 +362,30 @@ export class WidgetBase extends HTMLElement {
 		if (!this._updatePending) {
 			this._debug('→ Scheduling update...');
 			this._updatePending = true;
-			queueMicrotask(() => {
-				this._updatePending = false;
-				const changes = new Map(this._pendingChanges);
-				this._pendingChanges.clear();
-				this._debug('→ Running update', { changes: [...changes.keys()] });
-				this.update(changes);
-			});
-		}
+            
+            // Отменяем предыдущий запрос анимации, если есть
+            if (this._updateDebounce) {
+                cancelAnimationFrame(this._updateDebounce);
+            }
+            
+            // Используем requestAnimationFrame для визуальных обновлений
+            this._updateDebounce = requestAnimationFrame(() => {
+                this._performUpdate();
+            });
+        }
+    }
+
+    /**
+     * Выполняет обновление компонента.
+     * @private
+     */
+    _performUpdate() {
+		this._updatePending = false;
+		this._updateDebounce = null;
+		const changes = new Map(this._pendingChanges);
+		this._pendingChanges.clear();
+		this._debug('→ Running update', { changes: [...changes.keys()] });
+		this.update(changes);
 	}
 
 	/**
@@ -373,14 +399,19 @@ export class WidgetBase extends HTMLElement {
 	 * @protected
 	 */
 	update(changedProperties) {
+        if (!this.isConnected) {
+            this._debug('Skipping update - element disconnected');
+            return;
+        }
+
 		this._debug('update() called', { changed: [...changedProperties.keys()] });
 		this.beforeUpdate(changedProperties);
 		this._render();
+		this.afterUpdate(changedProperties);
 		if (!this._hasFirstUpdated) {
 			this.firstUpdated(changedProperties);
 			this._hasFirstUpdated = true;
 		}
-		this.afterUpdate(changedProperties);
 	}
 
 	/**
@@ -452,9 +483,17 @@ export class WidgetBase extends HTMLElement {
 	 * @private
 	 */
 	_render() {
+        try {
 		this._debug('Rendering template...');
 		render(this.render(), this._shadowRoot, { host: this });
 		this._hasRendered = true;
+        } catch (error) {
+            console.error(`Render error in ${this.localName}:`, error);
+            // Fallback UI
+            render(html`<div style="color: red; padding: 1rem;">
+                Render error: ${error.message}
+            </div>`, this._shadowRoot);
+        }
 	}
 
 	/**
@@ -486,6 +525,12 @@ export class WidgetBase extends HTMLElement {
 	 */
 	disconnectedCallback() {
 		this._debug('disconnectedCallback');
+        // Отменяем pending updates
+        if (this._updateDebounce) {
+            cancelAnimationFrame(this._updateDebounce);
+            this._updateDebounce = null;
+        }
+        this._updatePending = false;
 		this.onUnmounted();
 	}
 
@@ -501,11 +546,12 @@ export class WidgetBase extends HTMLElement {
 	 * Жизненный цикл: вызывается при изменении атрибута.
 	 */
 	attributeChangedCallback(name, oldValue, newValue) {
-		if (oldValue === newValue) return;
+		if (newValue === oldValue) return;
 		this._debug('attributeChanged', { name, oldValue, newValue });
 		for (const [key, config] of Object.entries(this._properties)) {
 			if (config.attribute === name) {
 				this[key] = newValue;
+				//this._setPropertyFromAttribute(key, newValue);
 				return;
 			}
 		}
@@ -516,31 +562,39 @@ export class WidgetBase extends HTMLElement {
 	 * @returns {Promise<void>}
 	 */
 	get updateComplete() {
-		if (!this._updatePending) {
+		this._debug('get updateComplete()');
+        if (!this._updatePending && !this._updateDebounce) {
 			return Promise.resolve();
 		}
+
 		return new Promise((resolve, reject) => {
 			if (!this.isConnected) {
 				reject(new Error('Element disconnected before update'));
 				return;
 			}
-			const observer = new MutationObserver(() => {
-				if (!this._updatePending) {
-					observer.disconnect();
-					resolve();
-				}
-			});
-			observer.observe(this, { childList: true, subtree: true });
 
-			// Опционально: отмена при удалении
-			const disconnect = () => {
-				observer.disconnect();
-				window.removeEventListener('beforeunload', disconnect);
-				reject(new Error('Element disconnected'));
-			};
-			window.addEventListener('beforeunload', disconnect);
-			this.addEventListener('disconnectedCallback', disconnect, { once: true });
-		});
+            const check = () => {
+                if (!this._updatePending && !this._updateDebounce) {
+					resolve();
+                } else {
+                    requestAnimationFrame(check);
+                }
+            };
+
+            check();
+
+            // Таймаут на случай зависших обновлений
+            setTimeout(() => reject(new Error('Update timeout')), 5000);
+        });
+    }
+
+    /**
+     * Принудительно обновляет компонент, пропуская очередь.
+     * @public
+     */
+    forceUpdate() {
+        this._pendingChanges.clear();
+        this._performUpdate();
 	}
 
 	// ────────────────────────────────────────────────────────
@@ -553,9 +607,69 @@ export class WidgetBase extends HTMLElement {
 	// ────────────────────────────────────────────────────────
 	// Утилиты
 	// ────────────────────────────────────────────────────────
-	$(selector) { return this._shadowRoot.querySelector(selector); }
-	$$(selector) { return this._shadowRoot.querySelectorAll(selector); }
-	$$$() { return this._shadowRoot; }
+    
+    /**
+     * Находит первый элемент в shadow DOM
+     * @param {string} selector
+     * @returns {Element|null}
+     */
+	$(selector) {
+		try {
+			return this._shadowRoot?.querySelector(selector) || null;
+		} catch (e) {
+			return null;
+		}
+	}
+
+    /**
+     * Находит все элементы в shadow DOM
+     * @param {string} selector
+     * @returns {NodeList}
+     */
+	$$(selector) {
+		try {
+			return this._shadowRoot?.querySelectorAll(selector) || [];
+		} catch (e) {
+			return [];
+		}
+	}
+
+    /**
+     * Возвращает корень shadow DOM
+     * @returns {ShadowRoot}
+     */
+    $$$() {
+        return this._shadowRoot;
+    }
+
+    /**
+     * Создаёт и отправляет кастомное событие
+     * @param {string} name - Имя события
+     * @param {Object} [detail={}] - Данные события
+     * @param {boolean} [bubbles=true] - Всплытие
+     * @param {boolean} [composed=true] - Переход через shadow boundary
+     */
+    dispatchCustomEvent(name, detail = {}, bubbles = true, composed = true) {
+        this.dispatchEvent(new CustomEvent(name, {
+            detail,
+            bubbles,
+            composed
+        }));
+    }
+
+    /**
+     * Устанавливает свойство без триггера рендера
+     * @param {string} name - Имя свойства
+     * @param {any} value - Значение
+     */
+    setPropertySilent(name, value) {
+        this._state[name] = value;
+    }
+
+	//
+	_setPropertyFromAttribute(name, value) {
+		this[name] = value;
+	}
 
 	/**
 	 * Создаёт parser для даты с поддержкой локали.

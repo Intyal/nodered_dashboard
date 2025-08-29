@@ -1,74 +1,67 @@
-import { html } from '../lit-html.js';
-import { WidgetBase } from "./WidgetBase.js";
+import { html, css } from '../js/lit-all.min.js';
+import { BUIBaseWidget } from '../js/bui-base-widget.js';
 
-class BuiSticker extends WidgetBase {
+export class BUISticker extends BUIBaseWidget {
 	static properties = {
-		// Размер в сетке. Переопределяет свойства width и height.
-		size: { type: String, noRender: true },
-		// Позиция в сетке. Переопределяет свойства left и top.
-		position: { type: String, noRender: true },
-		// Позиция по горизонтали (старт столбца). Отражается в CSS-переменной `--left`.
-		left: { watched: false, type: Number, cssVar: true, noRender: true },
-		// Ширина ячейки в единицах сетки. Отражается в CSS-переменной `--width`.
-		width: { watched: false, type: Number, cssVar: true, noRender: true },
-		// Позиция по вертикали (старт строки). Отражается в CSS-переменной `--top`.
-		top: { watched: false, type: Number, cssVar: true, noRender: true },
-		// Высота ячейки в единицах сетки. Отражается в CSS-переменной `--height`.
-		height: { watched: false, type: Number, cssVar: true, noRender: true },
+		// Размер в сетке. Переопределяет кастомные переменные --width и --height.
+		size: {
+			type: Array,
+			converter: function (value, type) {
+				return value.split(' ').map(Number);
+			}
+		},
+		// Позиция в сетке. Переопределяет кастомные переменные --left и --top.
+		position: {
+			type: Array,
+			converter: (value, type) => {
+				return value.split(' ').map(Number);
+			}
+		},
 	};
 
-	static styles = `
-		:host {
-			box-sizing: border-box;
-			border-radius: var(--bui-widget-border-radius, 0.5rem);
-			padding: var(--padding, 8px);
-			margin: var(--margin, 1px 2px);
+	static styles = css`
+    :host {
+      grid-column-end: span var(--width);
+      grid-row-end: span var(--height);
+      grid-column-start: var(--left);
+      grid-row-start: var(--top);
 
-			grid-column-end: span var(--width);
-			grid-row-end: span var(--height);
-			grid-column-start: var(--left);
-			grid-row-start: var(--top);
+      display: grid;
+      overflow: hidden;
+      grid-auto-flow: row dense;
+      grid-template-columns: repeat(var(--width), 1fr);
+      grid-template-rows: repeat(var(--height), 1fr);
+      gap: 0px;
+	  box-sizing: border-box;
 
-			display: grid;
-			overflow: hidden;
-			grid-auto-flow: row dense;
-			grid-template-columns: repeat(var(--width), 1fr);
-			grid-template-rows: repeat(var(--height), 1fr);
-			gap: 0px;
-			background: var(--color);
-			font-size: var(--page-atom-size);
-		}
-	`;
+      border-radius: var(--bui-widget-border-radius, 0.5rem);
+      padding: var(--padding, 8px);
+      margin: var(--margin, 1px 2px);
+      background: var(--bui-widget-background-color, hsl(240 5.1% 15%));
+      font-size: var(--page-atom-size);
+    }
+  `;
 
 	constructor() {
 		super();
 
-		//this.debug = true;
-
-		this.position = '0 0';
-		this.size = '2 2';
+		this.size = [2, 2];
+		this.position = [0, 0];
 	}
 
-	// Хук, вызываемый после обновления свойства.
-	afterPropertyUpdate(key, newValue, oldValue) {
-		if (key === 'size') {
-			const [width, height] = this.size.split(' ').map(Number);
-			this.width = width;
-			this.height = height;
-		}
-		if (key === 'position') {
-			const [left, top] = this.position.split(' ').map(Number);
-			this.left = left;
-			this.top = top;
-		}
+	set size(value) {
+		this.updatingCustomVariables(value, ['--width', '--height']);
+	}
+
+	set position(value) {
+		this.updatingCustomVariables(value, ['--left', '--top']);
 	}
 
 	render() {
 		return html`
-			<slot></slot>
-		`;
+      <slot></slot>
+    `;
 	}
-
 }
 
-BuiSticker.register();
+customElements.define('bui-sticker', BUISticker);

@@ -15,7 +15,7 @@
 	<link type="text/css" rel="stylesheet" href="./index.css" media="all">
 
 	<!-- NOTE this MUST be loaded as a MODULE. Also, uib client loaded in index not here -->
-	<script type="module" async src="./index.mjs">/* Your custom code + Imports uibuilder */</script>
+	<script type="module" async src="./index.js">/* Your custom code + Imports uibuilder */</script>
 	<!-- Виджеты BUI -->
 	<script type="module" src="./widgets/all.js"></script>
 
@@ -24,12 +24,20 @@
 <body>
 	<bui-book id="bui_book" tab-style="bottom">
 		<bui-page slot="pages" id="page0" role="page" class="panel-background-cell" number-cells="20" active>
-			<bui-sticker size="4 2" id="st1">
-				<bui-number value="5.456" fixed="1" size="2 2" position="0 0" id="n1">3</bui-number>
+			<bui-sticker size="8 8" id="st1">
+				<bui-gauge-circle2 size="8 8" gauge-style="34" value="50" units="%"></bui-gauge-circle2>
 			</bui-sticker>
-			<bui-sticker size="3 3" id="st2">
-				<bui-number value="3.1415926" fixed="3" style="--color: red; --font-size: 1.2em;"></bui-number>
+			<bui-sticker size="4 4" id="st2">
+				<bui-gauge-circle2 size="4 4" gauge-style="12" value="10" units="%"></bui-gauge-circle2>
 			</bui-sticker>
+			<bui-sticker size="4 4" id="st3">
+				<bui-gauge-circle2 size="4 4" gauge-style="full" value="80" units="%"></bui-gauge-circle2>
+			</bui-sticker>
+			<bui-sticker size="8 8" id="st4">
+				<bui-number size="4 1" value="123.456" style="--font-size: 3em;" id="n1"></bui-number>
+			</bui-sticker>
+			<bui-sticker size="6" id="st5"></bui-sticker>
+			<bui-sticker size="2 4" id="st6"></bui-sticker>
 		</bui-page>
 	</bui-book>
 </body>

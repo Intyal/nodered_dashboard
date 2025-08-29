@@ -1,8 +1,9 @@
-import { html, css } from '../js/lit-all.min.js';
-import { BUIBaseWidget } from '../js/bui-base-widget.js';
+import { html } from '../lit-html.js';
+import { WidgetBase } from "./WidgetBase.js";
 
-export class BUIBook extends BUIBaseWidget {
-	static styles = css`
+class BuiBook extends WidgetBase {
+
+	static styles = `
 		:host {
 			min-height: 100vh;
 			max-height: 100vh;
@@ -19,11 +20,7 @@ export class BUIBook extends BUIBaseWidget {
 		.pages_group {
 			flex-grow: 1;
 		}
-	`;
-
-	constructor() {
-		super();
-	}
+  `;
 
 	render() {
 		return html`
@@ -38,4 +35,4 @@ export class BUIBook extends BUIBaseWidget {
 
 }
 
-customElements.define('bui-book', BUIBook);
+BuiBook.register();
