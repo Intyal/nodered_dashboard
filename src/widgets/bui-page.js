@@ -1,5 +1,5 @@
 import { html, css } from '../js/lit-all.min.js';
-import { BUIBaseWidget } from '../js/bui-base-widget.js';
+import { BUIBaseWidget, mathUtilities } from '../js/bui-base-widget.js';
 
 export class BUIPage extends BUIBaseWidget {
 	static properties = {
@@ -50,10 +50,10 @@ export class BUIPage extends BUIBaseWidget {
 			console.warn(`[${this.constructor.name}][numberOfCells] Новое значение не является числом`);
 			return;
 		}
-		if (!this.isInRange(value, 1, 128)) {
+		if (!mathUtilities.isInRange(value, 1, 128)) {
 			console.warn(`[${this.constructor.name}][numberOfCells] Новое значение не входит в диапазон от 1 до 100`);
 		}
-		this.updatingCustomVariables([Math.ceil(value)], ['--number-cells']);
+		this.updatingCustomVariables(['--number-cells'], [Math.ceil(value)]);
 		this._numberOfCells = Math.ceil(value);
 	}
 	get numberOfCells() {

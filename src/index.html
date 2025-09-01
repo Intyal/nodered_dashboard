@@ -16,8 +16,6 @@
 
 	<!-- NOTE this MUST be loaded as a MODULE. Also, uib client loaded in index not here -->
 	<script type="module" async src="./index.js">/* Your custom code + Imports uibuilder */</script>
-	<!-- Виджеты BUI -->
-	<script type="module" src="./widgets/all.js"></script>
 
 </head>
 
@@ -25,19 +23,31 @@
 	<bui-book id="bui_book" tab-style="bottom">
 		<bui-page slot="pages" id="page0" role="page" class="panel-background-cell" number-cells="20" active>
 			<bui-sticker size="8 8" id="st1">
-				<bui-gauge-circle2 size="8 8" gauge-style="34" value="50" units="%"></bui-gauge-circle2>
+				<bui-gauge-circle2 size="8 8" gauge-style="arc" value="50" units="%" visible-value-off visible-range-off></bui-gauge-circle2>
 			</bui-sticker>
 			<bui-sticker size="4 4" id="st2">
-				<bui-gauge-circle2 size="4 4" gauge-style="12" value="10" units="%"></bui-gauge-circle2>
+				<bui-gauge-circle2 size="4 4" gauge-style="half" value="10" units="%"></bui-gauge-circle2>
 			</bui-sticker>
 			<bui-sticker size="4 4" id="st3">
 				<bui-gauge-circle2 size="4 4" gauge-style="full" value="80" units="%"></bui-gauge-circle2>
 			</bui-sticker>
 			<bui-sticker size="8 8" id="st4">
+				<bui-led size="1 1" style="--color: var(--color-cyan-700); --sizex: 30%; --sizey: 45%; --shadow: 0 3px 20px 4px var(--color);" options="horizontal" id="led1"></bui-led>
+				<bui-led size="1 1" id="led2"></bui-led>
 				<bui-number size="4 1" value="123.456" style="--font-size: 3em;" id="n1"></bui-number>
+				<bui-html class="bui-custom" size="4 3" style="--dimensions: 40%; --justify-content: center" id="html1">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="currentColor" d="M320 32c0-9.9-4.5-19.2-12.3-25.2S289.8-1.4 280.2 1l-179.9 45C79 51.3 64 70.5 64 92.5L64 448l-32 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 192 0 32 0 0-32 0-448zM256 256c0 17.7-10.7 32-24 32s-24-14.3-24-32s10.7-32 24-32s24 14.3 24 32zm96-128l96 0 0 352c0 17.7 14.3 32 32 32l64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-32 0 0-320c0-35.3-28.7-64-64-64l-96 0 0 64z"></path></svg>
+				</bui-html>
 			</bui-sticker>
-			<bui-sticker size="6" id="st5"></bui-sticker>
-			<bui-sticker size="2 4" id="st6"></bui-sticker>
+			<bui-sticker size="6" id="st5">
+				<bui-string size="3 1" style="--font-size: 3em;" id="s1">Строка</bui-string>
+			</bui-sticker>
+			<bui-sticker size="2 4" id="st6">
+				<bui-string size="1 3" direction="vertdown" style="--font-size: 3em;" id="s2">Строка</bui-string>
+			</bui-sticker>
+			<bui-sticker size="2 2" id="st7">
+				<bui-icon size="2 2" name="stars" style="--font-size: 3em;" id="i1"></bui-icon>
+			</bui-sticker>
 		</bui-page>
 	</bui-book>
 </body>

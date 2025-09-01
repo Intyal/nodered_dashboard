@@ -58,11 +58,11 @@ export class BUINumber extends BUIBaseWidget {
 	}
 
 	set size(value) {
-		this.updatingCustomVariables(value, ['--width', '--height']);
+		this.updatingCustomVariables(['--width', '--height'], value);
 	}
 
 	set position(value) {
-		this.updatingCustomVariables(value, ['--left', '--top']);
+		this.updatingCustomVariables(['--left', '--top'], value);
 	}
 
 	set value(value) {

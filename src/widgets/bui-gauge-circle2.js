@@ -1,5 +1,5 @@
 import { svg, css } from '../js/lit-all.min.js';
-import { BUIBaseWidget } from '../js/bui-base-widget.js';
+import { BUIBaseWidget, mathUtilities } from '../js/bui-base-widget.js';
 
 class BuiGaugeCircle2 extends BUIBaseWidget {
 	static properties = {
@@ -146,11 +146,11 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 	}
 
 	set size(value) {
-		this.updatingCustomVariables(value, ['--width', '--height']);
+		this.updatingCustomVariables(['--width', '--height'], value);
 	}
 
 	set position(value) {
-		this.updatingCustomVariables(value, ['--left', '--top']);
+		this.updatingCustomVariables(['--left', '--top'], value);
 	}
 
 	set value(value) {
@@ -172,7 +172,7 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 
 		this._gauge.majorTicksRadius = this.viewBoxWidth / 2 - this.sectorWidth / 2;
 		this._gauge.majorTicksCircumference = 2 * Math.PI * this._gauge.majorTicksRadius;
-		this._gauge.majorAngleToArc = this.mapRange(1, 0, 360, 0, this._gauge.majorTicksCircumference);
+		this._gauge.majorAngleToArc = mathUtilities.mapRange(1, 0, 360, 0, this._gauge.majorTicksCircumference);
 
 		this._gauge.pointsClockHand = `${this._gauge.halfWidth},${this._gauge.halfWidth + this.sectorWidth / 4} ${this.viewBoxWidth - this.sectorWidth / 2},${this._gauge.halfWidth} ${this._gauge.halfWidth},${this._gauge.halfWidth - this.sectorWidth / 4} ${this._gauge.halfWidth - this.sectorWidth / 2},${this._gauge.halfWidth - 3} ${this._gauge.halfWidth - this.sectorWidth / 2},${this._gauge.halfWidth + 3}`;
 	}
@@ -185,13 +185,13 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
                 valuePosition: [this._gauge.halfWidth, this.sectorWidth + (this._gauge.halfWidth - this._gauge.radiusPin - this.sectorWidth) / 2, 0, 15], // 36 / 4 + 6 = 15
                 unitsPosition: [this._gauge.halfWidth, (this._gauge.halfWidth + this._gauge.radiusPin) + ((this.viewBoxWidth - this.sectorWidth) - (this._gauge.halfWidth + this._gauge.radiusPin)) / 2, 0, 5] // 20 / 4 = 5
             },
-            "12": {
+            half: {
                 angle: 180,
                 heightViewBox: this.viewBoxHeight / 2 + 20,
                 valuePosition: [this._gauge.halfWidth, this.sectorWidth + (this._gauge.halfWidth - this._gauge.radiusPin - this.sectorWidth) / 2, 0, 9 + (this.units ? 0 : 6)], // 36 / 4 = 9
                 unitsPosition: [this._gauge.halfWidth, this._gauge.halfWidth - this._gauge.radiusPin, 0, -5]
             },
-            "34": {
+            arc: {
                 angle: 90,
                 heightViewBox: this.viewBoxHeight,
                 valuePosition: ["50%", this.viewBoxWidth - this.sectorWidth, 0, 9], // 36 / 4 = 9
@@ -218,8 +218,8 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 			const endNorm = Math.max(this.minValue, Math.min(end, this.maxValue));
 			
 			// Вычисление смещений для dasharray
-			const fillStart = this.mapRange(startNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart);
-			const fillEnd = this.mapRange(endNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart);
+			const fillStart = mathUtilities.mapRange(startNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart);
+			const fillEnd = mathUtilities.mapRange(endNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart);
 
 			// Формирование dasharray для текущего сектора
 			const arcLengthStart = (fillStart - currentOffset) * this._gauge.majorAngleToArc - (currentOffset ? this.widthTicksLine : 0);
@@ -249,7 +249,7 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		
 		const valueNorm = Math.max(this.minValue, Math.min(this.maxValue, this.value)); 
 
-		this._gauge.angleValue = this.mapRange(valueNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart);
+		this._gauge.angleValue = mathUtilities.mapRange(valueNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart);
 		
 	}
 
