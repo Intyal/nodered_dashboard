@@ -1,10 +1,12 @@
 import "./bui-book.js";
 import "./bui-page.js";
 import "./bui-sticker.js";
+import "./bui-group-box.js";
 import "./bui-number.js";
 import "./bui-string.js";
 import "./bui-led.js";
 import "./bui-icon.js";
 import "./bui-html.js";
+import "./bui-click.js";
 import "./bui-gauge-circle2.js";
 import "./time-formatted.js";

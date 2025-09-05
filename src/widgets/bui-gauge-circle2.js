@@ -2,6 +2,11 @@ import { svg, css } from '../js/lit-all.min.js';
 import { BUIBaseWidget, mathUtilities } from '../js/bui-base-widget.js';
 
 class BuiGaugeCircle2 extends BUIBaseWidget {
+	static defaults = {
+		size: [2, 2],
+		position: [0, 0],
+	};
+
 	static properties = {
 		// Размер в сетке. Переопределяет кастомные переменные --width и --height.
 		size: {
@@ -92,8 +97,8 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 
 		//this.debug = true;
 
-		this.size = [1, 1];
-		this.position = [0, 0];
+		this.size = this.defaults.size;
+		this.position = this.defaults.position;
 		this.value = 0;
 		this.fixed = 0;
 		this.units = '';
@@ -146,11 +151,23 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 	}
 
 	set size(value) {
-		this.updatingCustomVariables(['--width', '--height'], value);
+		this._size = this.validateAndSetArr(this.defaults.size, value);
+
+		this._size[0] = this._size[0] || this.parentNode?.size[0];
+		this._size[1] = this._size[1] || this.parentNode?.size[1];
+
+		this.updatingCustomVariables(['--width', '--height'], this._size);
+	}
+	get size() {
+		return this._size;
 	}
 
 	set position(value) {
-		this.updatingCustomVariables(['--left', '--top'], value);
+		this._position = this.validateAndSetArr(this.defaults.position, value);
+		this.updatingCustomVariables(['--left', '--top'], this._position);
+	}
+	get position() {
+		return this._position;
 	}
 
 	set value(value) {

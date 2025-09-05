@@ -8,12 +8,16 @@ export class BUIPage extends BUIBaseWidget {
 			attribute: 'number-cells',
 			type: Number
 		},
+		active: {
+			type: Boolean,
+			reflect: true,
+		},
 	};
 
 	static styles = css`
 		:host {
 			--bui-background-cell-size: calc(100dvw / var(--number-cells));
-			--bui-background-cell-height-count: 5;
+			--bui-background-cell-height-count: 1;
 			--page-atom-size: calc(var(--bui-background-cell-size) / 5);
 			
 			display: none;
@@ -60,12 +64,52 @@ export class BUIPage extends BUIBaseWidget {
 		return this._numberOfCells;
 	}
 
+	firstUpdated() {
+		if (this.slot === 'pages') {
+			// Проверяем, выбрана ли эта страница
+			const selectedPage = window.localStorage.getItem('selectedPage');
+			if (selectedPage === this.id) {
+				this.active = true;
+			}
+		}
+	}
+
 	render() {
 		return html`
 			<div part="page" id="page">
 				<slot></slot>
 			</div>
 		`;
+	}
+
+	connectedCallback() {
+		super.connectedCallback();
+		
+		// Скрыть/показать страницу
+		if (this.slot === 'pages') {
+			this.handleTopicSet = event => { // сохраняем обработчик как свойство класса
+				if (event.detail.page === this.id) {
+					if (!this.active) {
+						this.active = true;
+						// Записываем выбранную страницу в localStorage
+						window.localStorage.setItem('selectedPage', this.id);
+					}
+				} else {
+					this.active = false;
+				}
+			};
+			
+			document.addEventListener('bui-select-page', this.handleTopicSet);
+		}
+	}
+	
+	disconnectedCallback() {
+		if (this.slot === 'pages') {
+			document.removeEventListener('bui-select-page', this.handleTopicSet);
+			delete this.handleTopicSet;
+		}
+		
+		super.disconnectedCallback();
 	}
 }
 

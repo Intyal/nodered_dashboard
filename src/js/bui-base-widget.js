@@ -5,12 +5,18 @@ export class BUIBaseWidget extends LitElement {
 	#mySheet = new CSSStyleSheet();
 	#rule = null;
 
+	static defaults = {};
+
 	constructor() {
 		super();
 
 		// Инициализация стилей
 		this.#mySheet.replaceSync(':host {}');
 		this.#rule = this.#mySheet.cssRules[0]?.style || null;
+	}
+
+	get defaults() {
+		return this.constructor.defaults;
 	}
 
 	/**
@@ -44,17 +50,65 @@ export class BUIBaseWidget extends LitElement {
 		}
 	}
 
-	/**
-	 * Подключение стилей к shadowRoot
-	 */
-	connectedCallback() {
-		super.connectedCallback(); // Вызов родительского метода LitElement
+	// Метод для получения значения CSS-свойства
+	getCustomVariable(cssPropertie) {
+		if (this.#rule) {
+			return this.#rule.getPropertyValue(cssPropertie);
+		}
+	}
 
+	connectedCallback() {
+		super.connectedCallback();
+		// Подключение стилей к shadowRoot
 		if (this.shadowRoot) {
 			this.shadowRoot.adoptedStyleSheets = [
 				...this.shadowRoot.adoptedStyleSheets,
 				this.#mySheet
 			];
+		}
+	}
+
+	//
+	validateAndSetArr(currentValue, newValue) {
+		// Если текущее значение не определено
+		if (currentValue === undefined) {
+			currentValue = newValue;
+			return currentValue;
+		}
+		// Если передано одно число
+		if (typeof newValue === 'number') {
+			const result = [...currentValue];
+			result[0] = newValue;
+			return result;
+		}
+		// Если передан массив
+		else if (Array.isArray(newValue)) {
+			// Проверяем, что все элементы в newValue - числа
+			if (newValue.every(item => typeof item === 'number')) {
+				const result = [...currentValue];
+				// Заменяем столько элементов, сколько есть в newValue, но не больше длины currentValue
+				const elementsToReplace = Math.min(newValue.length, currentValue.length);
+				for (let i = 0; i < elementsToReplace; i++) {
+					result[i] = newValue[i];
+				}
+				return result;
+			}
+			// Если в newValue есть нечисловые элементы, возвращаем текущее значение
+			else {
+				return currentValue;
+			}
+		}
+		// Если передано что-то другое, возвращаем текущее значение
+		else {
+			return currentValue;
+		}
+	}
+
+	getDefaults(name) {
+		if (this.constructor.defaults[name]) {
+			return this.constructor.defaults[name];
+		} else {
+			return null;
 		}
 	}
     

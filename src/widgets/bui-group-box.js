@@ -6,7 +6,7 @@
 import { html, css } from '../js/lit-all.min.js';
 import { BUIBaseWidget } from '../js/bui-base-widget.js';
 
-export class BUISticker extends BUIBaseWidget {
+export class BUIGroupBox extends BUIBaseWidget {
 	static defaults = {
 		size: [2, 2],
 		position: [0, 0],
@@ -39,24 +39,24 @@ export class BUISticker extends BUIBaseWidget {
 
 	static styles = css`
     :host {
-		grid-column-end: span var(--width);
-		grid-row-end: span var(--height);
-		grid-column-start: var(--left);
-		grid-row-start: var(--top);
+      grid-column-end: span var(--width);
+      grid-row-end: span var(--height);
+      grid-column-start: var(--left);
+      grid-row-start: var(--top);
 
-		display: grid;
-		overflow: hidden;
-		grid-auto-flow: row dense;
-		grid-template-columns: repeat(var(--innerWidth, var(--width)), 1fr);
-		grid-template-rows: repeat(var(--innerHeight, var(--height)), 1fr);
-		gap: 0px;
-		box-sizing: border-box;
+      display: grid;
+      overflow: visible;
+      grid-auto-flow: row dense;
+      grid-template-columns: repeat(var(--innerWidth, var(--width)), 1fr);
+      grid-template-rows: repeat(var(--innerHeight, var(--height)), 1fr);
+      gap: 0px;
+	  box-sizing: border-box;
 
-		border-radius: var(--bui-widget-border-radius, 0.5rem);
-		padding: var(--padding, 8px);
-		margin: var(--margin, 1px 2px);
-		background: var(--bui-widget-background-color, hsl(240 5.1% 15%));
-		font-size: var(--page-atom-size);
+      /* border-radius: var(--bui-widget-border-radius, 0.5rem); */
+      padding: var(--padding, 8px);
+      margin: var(--margin, 1px 2px);
+      background: transponent;
+      /* font-size: var(--page-atom-size); */
     }
   `;
 
@@ -106,4 +106,4 @@ export class BUISticker extends BUIBaseWidget {
 	}
 }
 
-customElements.define('bui-sticker', BUISticker);
+customElements.define('bui-group-box', BUIGroupBox);

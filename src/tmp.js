@@ -63,7 +63,11 @@ export class BUIIcon extends BUIBaseWidget {
 	}
 
 	set position(value) {
-		this.updatingCustomVariables(['--left', '--top'], value);
+		this._position = this.validateAndSetArr(this._position, value);
+		this.updatingCustomVariables(['--left', '--top'], this._position);
+	}
+	get position() {
+		return this._position;
 	}
 
 	async willUpdate(changedProperties) {
