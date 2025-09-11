@@ -23,7 +23,7 @@ export class BUIGroupBox extends BUIBaseWidget {
 		// Позиция в сетке. Переопределяет кастомные переменные --left и --top.
 		position: {
 			type: Array,
-			converter: (value, type) => {
+			converter: function (value, type) {
 				return value.split(' ').map(Number);
 			}
 		},
@@ -32,32 +32,32 @@ export class BUIGroupBox extends BUIBaseWidget {
 			attribute: 'inner-size',
 			type: Array,
 			converter: function (value, type) {
-				return value ? value.split(' ').map(Number) : ['',''];
+				return value ? value.split(' ').map(Number) : ['', ''];
 			}
 		},
 	};
 
 	static styles = css`
-    :host {
-      grid-column-end: span var(--width);
-      grid-row-end: span var(--height);
-      grid-column-start: var(--left);
-      grid-row-start: var(--top);
+		:host {
+			grid-column-end: span var(--width);
+			grid-row-end: span var(--height);
+			grid-column-start: var(--left);
+			grid-row-start: var(--top);
 
-      display: grid;
-      overflow: visible;
-      grid-auto-flow: row dense;
-      grid-template-columns: repeat(var(--innerWidth, var(--width)), 1fr);
-      grid-template-rows: repeat(var(--innerHeight, var(--height)), 1fr);
-      gap: 0px;
-	  box-sizing: border-box;
+			display: grid;
+			overflow: visible;
+			grid-auto-flow: row dense;
+			grid-template-columns: repeat(var(--innerWidth, var(--width)), 1fr);
+			grid-template-rows: repeat(var(--innerHeight, var(--height)), 1fr);
+			gap: 0px;
+			box-sizing: border-box;
 
-      /* border-radius: var(--bui-widget-border-radius, 0.5rem); */
-      padding: var(--padding, 8px);
-      margin: var(--margin, 1px 2px);
-      background: transponent;
-      /* font-size: var(--page-atom-size); */
-    }
+			/* border-radius: var(--bui-widget-border-radius, 0.5rem); */
+			padding: var(--padding, 8px);
+			margin: var(--margin, 1px 2px);
+			background: transponent;
+			/* font-size: var(--page-atom-size); */
+		}
   `;
 
 	constructor() {
@@ -74,7 +74,7 @@ export class BUIGroupBox extends BUIBaseWidget {
 		this._size[1] = this._size[1] || this.parentNode?.size[1];
 
 		this.updatingCustomVariables(['--width', '--height'], this._size);
-		
+
 		if (!this.getAttribute('inner-size')) {
 			this.innerSize = this._size;
 		}

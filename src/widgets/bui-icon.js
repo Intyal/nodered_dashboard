@@ -19,7 +19,7 @@ export class BUIIcon extends BUIBaseWidget {
 		// Позиция в сетке. Переопределяет кастомные переменные --left и --top.
 		position: {
 			type: Array,
-			converter: (value, type) => {
+			converter: function (value, type) {
 				return value.split(' ').map(Number);
 			},
 		},
@@ -90,10 +90,7 @@ export class BUIIcon extends BUIBaseWidget {
 
 	willUpdate(changedProperties) {
 		if (changedProperties.has('name') || changedProperties.has('library') || changedProperties.has('src')) {
-			this._loadIcon().then(icon => {
-				//icon.setAttribute('width', '1em');
-				//icon.setAttribute('height', '1em');
-				//icon.setAttribute('viewBox', '0 0 24 24');
+			this.#loadIcon().then(icon => {
 				this._currentIcon = icon;
 				this.requestUpdate(); // Запрашиваем обновление после загрузки
 			});
@@ -102,7 +99,7 @@ export class BUIIcon extends BUIBaseWidget {
 
 	render() {
 		if (!this._currentIcon) {
-			return this._renderLoadingPlaceholder();
+			return this.renderLoadingPlaceholder();
 		}
 
 		return svg`
@@ -119,7 +116,7 @@ export class BUIIcon extends BUIBaseWidget {
 	 * Если указан `this.src`, парсит строку SVG в DOM-элемент.
 	 * Иначе загружает иконку из указанной библиотеки (`this.library`).
 	 */
-	async _loadIcon() {
+	async #loadIcon() {
 		if (this.src) {
 			const parser = new DOMParser();
 			const doc = parser.parseFromString(this.src, 'image/svg+xml');
@@ -137,7 +134,7 @@ export class BUIIcon extends BUIBaseWidget {
 	}
 
 	// Иконка загрузки
-	_renderLoadingPlaceholder() {
+	renderLoadingPlaceholder() {
 		return svg`
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="#ccc" stroke-width="2"/>

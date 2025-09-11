@@ -254,23 +254,26 @@ bui-html {
 	--justify-content: center;
 }
 
-bui-sticker {
+bui-sticker:not([type]) {
 	--margin: 0px 1px;
 	--padding: 1dvmin 1dvmin;
 
+	border-radius: var(--bui-widget-border-radius, 0.5rem);
 	border-top: 1px solid color-mix(in oklab, var(--bui-widget-background-color), #ffffff 25%);
 	/*border-left: 2px solid  color-mix(in oklab, var(--bui-widget-background-color), #ffffff 25%);*/
 	border-bottom: 2px solid color-mix(in oklab, var(--bui-widget-background-color), #000000 25%);
 	/*border-right: 3px solid color-mix(in oklab, var(--bui-widget-background-color), #000000 25%);*/
+
+	background: var(--bui-widget-background-color);
 }
 
-bui-group-box {
+bui-sticker[type="group"] {
 	--margin: 0;
 	--padding: 0;
-	/* --bui-widget-background-color: transponent; */
 
 	border: 0;
-	/* overflow: unset; */
+
+	background: transponent;
 }
 
 /* bui-number {

@@ -1,7 +1,7 @@
 import "./bui-book.js";
 import "./bui-page.js";
 import "./bui-sticker.js";
-import "./bui-group-box.js";
+//import "./bui-group-box.js";
 import "./bui-number.js";
 import "./bui-string.js";
 import "./bui-led.js";

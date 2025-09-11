@@ -18,7 +18,7 @@ export class BUINumber extends BUIBaseWidget {
 		// Позиция в сетке. Переопределяет кастомные переменные --left и --top.
 		position: {
 			type: Array,
-			converter: (value, type) => {
+			converter: function (value, type) {
 				return value.split(' ').map(Number);
 			}
 		},
@@ -52,13 +52,11 @@ export class BUINumber extends BUIBaseWidget {
 	constructor() {
 		super();
 
-		//this.debug = true;
-
 		this.size = this.defaults.size;
 		this.position = this.defaults.position;
 		this.value = 0;
 		this.fixed = 2;
-		//
+
 		this.fixedValue = 0; // Значение, которое будет отображено.
 	}
 

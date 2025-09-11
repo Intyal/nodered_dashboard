@@ -26,47 +26,55 @@
 			<bui-click target="bi1" action="select-page" data="page0"></bui-click>
 			<bui-icon size="1 1" name="brilliance" style="--font-size: 3em;" id="bi2"></bui-icon>
 			<bui-click target="bi2" action="select-page" data="page1"></bui-click>
+			<bui-icon size="1 1" name="brilliance" style="--font-size: 3em;" id="bi3"></bui-icon>
+			<bui-click target="bi3" action="select-page" data="bui_4f67e2c6724c27dd"></bui-click>
 		</bui-page>
 		<bui-page slot="pages" id="page0" class="panel-background-dot" number-cells="20">
 			<bui-string size="20 1" style="--font-size: 5em;">Свет</bui-string>
-			<bui-group-box size="20 7" inner-size="3 1">
+			<bui-sticker type="group"  size="20 7" inner-size="3 1">
 				<bui-sticker size="1 1" inner-size="5 7">
 					<bui-string size="5 1" style="--font-size: 4em;">Кухня</bui-string>
 					<bui-icon size="5 4" library="boxicons" name="bx-dishwasher" style="--font-size: 10em;"></bui-icon>
-					<bui-group-box size="5 2" id="button_1">
+					<bui-sticker type="group"  size="5 2" id="button_1">
 						<bui-led size="3 1" position="2 2" style="--color: var(--color-cyan-700); --sizex: 50%; --sizey: 45%; --shadow: 0 3px 20px 4px var(--color);" options="horizontal"></bui-led>
-					</bui-group-box>
+					</bui-sticker>
 				</bui-sticker>
 				<bui-sticker size="1 1" inner-size="5 7">
 					<bui-string size="5 1" style="--font-size: 4em;">Кухня</bui-string>
 					<bui-icon size="5 4" library="boxicons" name="bx-dishwasher" style="--font-size: 10em;"></bui-icon>
-					<bui-group-box size="5 2" class="switch-button-3d" id="button_2">
+					<bui-sticker type="group"  size="5 2" class="switch-button-3d" id="button_2">
 						<bui-led size="3 1" position="2 2" style="--color: var(--color-cyan-700); --sizex: 50%; --sizey: 45%; --shadow: 0 3px 20px 4px var(--color);" options="horizontal"></bui-led>
-					</bui-group-box>
+					</bui-sticker>
 				</bui-sticker>
 				<bui-sticker size="1 1" inner-size="5 7">
 					<bui-string size="5 1" style="--font-size: 4em;">Кухня</bui-string>
 					<bui-icon size="5 4" library="boxicons" name="bx-dishwasher" style="--font-size: 10em;"></bui-icon>
-					<bui-group-box size="5 2" class="switch-button-3d" id="button_3">
+					<bui-sticker type="group"  size="5 2" class="switch-button-3d" id="button_3">
 						<bui-led size="3 1" position="2 2" style="--color: var(--color-cyan-700); --sizex: 50%; --sizey: 45%; --shadow: 0 3px 20px 4px var(--color);" options="horizontal"></bui-led>
-					</bui-group-box>
+					</bui-sticker>
 				</bui-sticker>
-			</bui-group-box>
+			</bui-sticker>
 		</bui-page>
 		<bui-page slot="pages" id="page1" class="panel-background-dot" number-cells="20">
-			<bui-group-box size="5 7">
+			<bui-sticker type="group"  size="5 7">
 				<bui-sticker size="5 5">
 					<bui-string size="5 1" style="--font-size: 4em;">Кухня</bui-string>
 					<bui-icon size="5 3" library="boxicons" name="bx-dishwasher" style="--font-size: 10em;"></bui-icon>
 				</bui-sticker>
 				
-				<bui-sticker size="5 2" class="switch-button-3d" id="button_4">
+				<bui-sticker type="group" size="5 2" class="switch-button-3d" id="button_4">
 					<bui-led size="3 1" position="2 2" style="--color: var(--color-cyan-700); --sizex: 50%; --sizey: 45%; --shadow: 0 3px 20px 4px var(--color);" options="horizontal"></bui-led>
 				</bui-sticker>
-			</bui-group-box>
+				<bui-click 
+					target="button_4" 
+					action="message" 
+					data="user-login"
+					params='{"userId": 123, "timestamp": "2024-01-01"}'>
+				</bui-click>
+			</bui-sticker>
 
 			<bui-sticker size="8 8" id="st1">
-				<bui-gauge-circle2 size="8 8" gauge-style="arc" value="50" units="%" visible-value-off visible-range-off></bui-gauge-circle2>
+				<bui-gauge-circle2 size="8 8" gauge-style="arc" value="50" units="%" visible-value-off visible-range-off id="gauge_1"></bui-gauge-circle2>
 			</bui-sticker>
 			<bui-sticker size="4 4" id="st2">
 				<bui-gauge-circle2 size="4 4" gauge-style="half" value="10" units="%"></bui-gauge-circle2>
@@ -78,10 +86,10 @@
 				<bui-led size="1 1" style="--color: var(--color-cyan-700); --sizex: 30%; --sizey: 45%; --shadow: 0 3px 20px 4px var(--color);" options="horizontal" id="led1"></bui-led>
 				<bui-led size="1 1" id="led2"></bui-led>
 				<bui-number size="4 1" value="123.456" style="--font-size: 3em;" id="n1"></bui-number>
-				<bui-group-box size="4 4" id="gb1">
+				<bui-sticker type="group"  size="4 4" id="gb1">
 					<bui-icon size="1 1" name="brilliance" style="--font-size: 3em;" id="i2"></bui-icon>
 					<bui-icon size="1 1" name="stars" style="--font-size: 5em;" id="i3"></bui-icon>
-				</bui-group-box>
+				</bui-sticker>
 				<bui-icon size="2 2" name="stars" style="--font-size: 8em;" id="i4"></bui-icon>
 				<bui-icon size="4 4" name="brilliance" style="--font-size: 12em;" id="i5"></bui-icon>
 				<bui-click 
@@ -99,12 +107,6 @@
 			</bui-sticker>
 			<bui-sticker size="2 2" id="st7">
 				<bui-icon size="2 2" name="stars" style="--font-size: 3em;" id="i1"></bui-icon>
-				<bui-click 
-					target="i1" 
-					action="message" 
-					data="user-login"
-					params='{"userId": 123, "timestamp": "2024-01-01"}'>
-				</bui-click>
 			</bui-sticker>
 		</bui-page>
 	</bui-book>

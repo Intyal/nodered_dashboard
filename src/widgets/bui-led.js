@@ -18,7 +18,7 @@ export class BUILed extends BUIBaseWidget {
 		// Позиция в сетке. Переопределяет кастомные переменные --left и --top.
 		position: {
 			type: Array,
-			converter: (value, type) => {
+			converter: function (value, type) {
 				return value.split(' ').map(Number);
 			},
 		},

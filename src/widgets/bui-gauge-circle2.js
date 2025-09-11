@@ -18,7 +18,7 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		// Позиция в сетке. Переопределяет кастомные переменные --left и --top.
 		position: {
 			type: Array,
-			converter: (value, type) => {
+			converter: function (value, type) {
 				return value.split(' ').map(Number);
 			}
 		},
@@ -94,8 +94,6 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 
 	constructor() {
 		super();
-
-		//this.debug = true;
 
 		this.size = this.defaults.size;
 		this.position = this.defaults.position;
@@ -263,11 +261,8 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 
 
 	#gaugeValueUpdate() {
-		
 		const valueNorm = Math.max(this.minValue, Math.min(this.maxValue, this.value)); 
-
 		this._gauge.angleValue = mathUtilities.mapRange(valueNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart);
-		
 	}
 
 	#gaugeAnimate() {
@@ -305,14 +300,14 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 	}
 
 	render() {
-		return this.templateGauge();
+		return this.#templateGauge();
 	}
 
 	updated(changedProperties) {
 		this.#gaugeAnimate();
 	}
 
-	templateGauge() {
+	#templateGauge() {
 		return svg`
 		<svg viewBox="0 0 ${this.viewBoxWidth} ${this._gauge.heightViewBox}">
 			<!-- Цветные сектора -->
