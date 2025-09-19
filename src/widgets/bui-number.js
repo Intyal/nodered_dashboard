@@ -5,6 +5,8 @@ export class BUINumber extends BUIBaseWidget {
 	static defaults = {
 		size: [1, 1],
 		position: [0, 0],
+		value: 0,
+		fixed: 2,
 	};
 
 	static properties = {
@@ -28,6 +30,7 @@ export class BUINumber extends BUIBaseWidget {
 		},
 		// Количество знаков после запятой при отображении.
 		fixed: {
+			attribute: 'fraction-digits',
 			type: Number
 		},
 	};
@@ -52,10 +55,7 @@ export class BUINumber extends BUIBaseWidget {
 	constructor() {
 		super();
 
-		this.size = this.defaults.size;
-		this.position = this.defaults.position;
-		this.value = 0;
-		this.fixed = 2;
+		Object.assign(this, this.defaults);
 
 		this.fixedValue = 0; // Значение, которое будет отображено.
 	}
@@ -63,9 +63,16 @@ export class BUINumber extends BUIBaseWidget {
 	set size(value) {
 		this._size = this.validateAndSetArr(this.defaults.size, value);
 
-		this._size[0] = this._size[0] || this.parentNode?.size[0];
-		this._size[1] = this._size[1] || this.parentNode?.size[1];
-
+		// Изменение размеров под родителя, если значения равны 0.
+		if (this.parentElement) {
+			if (this._size[0] === 0) {
+				this._size[0] = this.parentElement?.innerSize[0];
+			}
+			if (this._size[1] === 0) {
+				this._size[1] = this.parentElement?.innerSize[1];
+			}
+		}
+		
 		this.updatingCustomVariables(['--width', '--height'], this._size);
 	}
 	get size() {
@@ -93,7 +100,7 @@ export class BUINumber extends BUIBaseWidget {
 
 	willUpdate(changedProperties) {
 		// Метод .every() (для "все"), .some() (для "хотя бы один"):
-		if (['value', 'fixed'].some(key => changedProperties.has(key))) {
+		if (['value', 'fraction-digits'].some(key => changedProperties.has(key))) {
 			let fixedValue = Number(this.value);
 			if (!isNaN(this.fixed) && Number(this.fixed) >= 0) {
 				fixedValue = fixedValue.toFixed(Number(this.fixed));
@@ -102,11 +109,19 @@ export class BUINumber extends BUIBaseWidget {
 		}
 	}
 
-	// Отрисовывает шаблон с помощью lit-html.
 	render() {
 		return html`
 			${this.fixedValue}
 		`;
+	}
+
+	connectedCallback() {
+		super.connectedCallback();
+		// Изменение размеров под родителя, если значения равны 0.
+		this.size = [
+			this._size[0] || this.parentElement?.innerSize[0],
+			this._size[1] || this.parentElement?.innerSize[1]
+		];
 	}
 }
 

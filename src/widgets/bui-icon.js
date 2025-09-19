@@ -6,6 +6,9 @@ export class BUIIcon extends BUIBaseWidget {
 	static defaults = {
 		size: [1, 1],
 		position: [0, 0],
+		library: 'default',
+		name: 'image',
+		src: '',
 	};
 	
 	static properties = {
@@ -59,11 +62,7 @@ export class BUIIcon extends BUIBaseWidget {
 	constructor() {
 		super();
 
-		this.size = this.defaults.size;
-		this.position = this.defaults.position;
-		this.library = 'default';
-		this.name = 'image';
-		this.src = '';
+		Object.assign(this, this.defaults);
 
 		this._currentIcon = null;
 	}
@@ -71,9 +70,16 @@ export class BUIIcon extends BUIBaseWidget {
 	set size(value) {
 		this._size = this.validateAndSetArr(this.defaults.size, value);
 
-		this._size[0] = this._size[0] || this.parentNode?.size[0];
-		this._size[1] = this._size[1] || this.parentNode?.size[1];
-
+		// Изменение размеров под родителя, если значения равны 0.
+		if (this.parentElement) {
+			if (this._size[0] === 0) {
+				this._size[0] = this.parentElement?.innerSize[0];
+			}
+			if (this._size[1] === 0) {
+				this._size[1] = this.parentElement?.innerSize[1];
+			}
+		}
+		
 		this.updatingCustomVariables(['--width', '--height'], this._size);
 	}
 	get size() {
@@ -105,6 +111,13 @@ export class BUIIcon extends BUIBaseWidget {
 		return svg`
 			${this._currentIcon}
 		`;
+	}
+
+	connectedCallback() {
+		super.connectedCallback();
+		// Изменение размеров под родителя, если значения равны 0.
+		this.size = [this._size[0] || this.parentElement?.innerSize[0],
+			this._size[1] || this.parentElement?.innerSize[1]];
 	}
 
 	/**

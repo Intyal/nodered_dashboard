@@ -1,0 +1,239 @@
+[
+    {
+        "id": "1d71b0e131b40218",
+        "type": "subflow",
+        "name": "Монометр",
+        "info": "",
+        "category": "",
+        "in": [
+            {
+                "x": 60,
+                "y": 200,
+                "wires": [
+                    {
+                        "id": "a4b9512b23a74040"
+                    },
+                    {
+                        "id": "c805f78339650fe9"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 980,
+                "y": 160,
+                "wires": [
+                    {
+                        "id": "c805f78339650fe9",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [
+			{
+                "name": "position",
+                "type": "json",
+                "value": "[]",
+                "ui": {
+                    "label": {
+                        "ru": "Позиция [x,y]"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "json"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "size",
+                "type": "json",
+                "value": "[2,2]",
+                "ui": {
+                    "label": {
+                        "ru": "Размер [w,h]"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "json"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "topic",
+                "type": "str",
+                "value": "",
+                "ui": {
+                    "label": {
+                        "ru": "Топик"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "str"
+                        ]
+                    }
+                }
+            }
+        ],
+        "meta": {},
+        "color": "#DDAA99",
+        "status": {
+            "x": 980,
+            "y": 300,
+            "wires": [
+                {
+                    "id": "6e9a98acb7736ad1",
+                    "port": 0
+                }
+            ]
+        }
+    },
+    {
+        "id": "ed5d9fe609ae8fbd",
+        "type": "function",
+        "z": "1d71b0e131b40218",
+        "name": "Создание bui-gauge-circle2",
+        "func": "const id = \"bui_\" + env.get(\"NR_SUBFLOW_ID\");\n\nconst ui = {\n    \"id\": id,\n    \"type\": \"bui-gauge-circle2\",\n    \"parent\": `#${msg.parent}`,\n    \"position\": \"last\",\n    \"attributes\": {\n        \"size\": \"4 4\",\n        \"gauge-style\": \"arc\",\n        \"value\": \"50\",\n        \"units\": \"%\",\n        \"visible-value-off\": true,\n        \"visible-range-off\": true,\n    },\n    \"properties\": {\n        \"NodeRed\": {\n            \"x\": 0,\n            \"y\": 0,\n            \"z\": msg.z\n        }\n    }\n};\n\nmsg.ui = ui;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 220,
+        "wires": [
+            [
+                "1d0b3119d6b735e9"
+            ]
+        ]
+    },
+    {
+        "id": "6e9a98acb7736ad1",
+        "type": "function",
+        "z": "1d71b0e131b40218",
+        "name": "Обновление",
+        "func": "const id = \"bui_\" + env.get(\"NR_SUBFLOW_ID\");\nconst ui = [\n    {\n        \"method\":\"update\",\n        \"components\": [\n            {\n                \"id\": id,\n                \"attributes\": {\n                    \"value\": msg.payload,\n                },\n            }\n        ]\n    }\n];\n// Статус виджета\nreturn {\n    \"payload\": {\n        fill: \"green\",\n        shape: \"ring\",\n        com: \"ui_update\",\n        ui: ui,\n        text: \"\",\n    }\n};",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 300,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a4b9512b23a74040",
+        "type": "switch",
+        "z": "1d71b0e131b40218",
+        "name": "",
+        "property": "topic",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "bui_rebuild",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "topic",
+                "vt": "env"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 190,
+        "y": 260,
+        "wires": [
+            [
+                "ed5d9fe609ae8fbd"
+            ],
+            [
+                "5a33d0a5939515e9"
+            ]
+        ]
+    },
+    {
+        "id": "1d0b3119d6b735e9",
+        "type": "function",
+        "z": "1d71b0e131b40218",
+        "name": "Добавление",
+        "func": "const id = \"bui_\" + env.get(\"NR_SUBFLOW_ID\");\n\n// Получаем EventEmitter\nconst pageEE = msg.pageEE;\nif (pageEE && \n    typeof pageEE.on === 'function' &&\n    typeof pageEE.emit === 'function') {\n    // Эмитируем событие с данными\n    pageEE.emit('addWidget', {\n        source: id,\n        ui: msg.ui,\n        time: Date.now(),\n    });\n}\n\nreturn msg;",
+        "outputs": 0,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 850,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "c805f78339650fe9",
+        "type": "change",
+        "z": "1d71b0e131b40218",
+        "name": "z+1",
+        "rules": [
+            {
+                "t": "set",
+                "p": "z",
+                "pt": "msg",
+                "to": "msg.z+1",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 170,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5a33d0a5939515e9",
+        "type": "junction",
+        "z": "1d71b0e131b40218",
+        "x": 300,
+        "y": 300,
+        "wires": [
+            [
+                "6e9a98acb7736ad1"
+            ]
+        ]
+    },
+    {
+        "id": "22cc934c1aed3b3a",
+        "type": "subflow:1d71b0e131b40218",
+        "z": "9281f2d5169cb5e9",
+        "name": "",
+        "env": [
+            {
+                "name": "topic",
+                "value": "random/random1",
+                "type": "str"
+            }
+        ],
+        "x": 1150,
+        "y": 860,
+        "wires": [
+            []
+        ]
+    }
+]

@@ -5,6 +5,8 @@ export class BUILed extends BUIBaseWidget {
 	static defaults = {
 		size: [1, 1],
 		position: [0, 0],
+		scale: [90, 90],
+		glowOff: false,
 	};
 
 	static properties = {
@@ -22,9 +24,21 @@ export class BUILed extends BUIBaseWidget {
 				return value.split(' ').map(Number);
 			},
 		},
+		// Масштаб относительно внутреннего размера. Переопределяет кастомные переменные --scalex и --scaley.
+		scale: {
+			type: Array,
+			converter: function (value, type) {
+				return value.split(' ').map(Number);
+			},
+		},
+		// Эффкет свечения.
 		glowOff: {
 			type: Boolean,
 			attribute: 'glow-off',
+		},
+		// Стиль элемента.
+		style: {
+			type: String,
 		},
 	};
 
@@ -41,10 +55,10 @@ export class BUILed extends BUIBaseWidget {
 
 			font-size: var(--font-size);
 		}
-		.content {
+		.led {
 			flex: 1;
-			max-width: var(--sizex, 90%);
-			min-height: var(--sizey, 90%);
+			max-width: var(--scalex);
+			min-height: var(--scaley);
 			/*max-height: 100%;*/
 			background: var(--color);
 			box-shadow: var(--shadow);
@@ -58,16 +72,23 @@ export class BUILed extends BUIBaseWidget {
 	constructor() {
 		super();
 
-		this.size = this.defaults.size;
-		this.position = this.defaults.position;
+		Object.assign(this, this.defaults);
+		this.color = "";
 	}
 
 	set size(value) {
 		this._size = this.validateAndSetArr(this.defaults.size, value);
 
-		this._size[0] = this._size[0] || this.parentNode?.size[0];
-		this._size[1] = this._size[1] || this.parentNode?.size[1];
-
+		// Изменение размеров под родителя, если значения равны 0.
+		if (this.parentElement) {
+			if (this._size[0] === 0) {
+				this._size[0] = this.parentElement?.innerSize[0];
+			}
+			if (this._size[1] === 0) {
+				this._size[1] = this.parentElement?.innerSize[1];
+			}
+		}
+		
 		this.updatingCustomVariables(['--width', '--height'], this._size);
 	}
 	get size() {
@@ -82,21 +103,65 @@ export class BUILed extends BUIBaseWidget {
 		return this._position;
 	}
 
-	set glowOff(value) {
-		if (value) {
-			this.updatingCustomVariables(['--shadow'], ['0']);
-		} else {
-			const rgb = colorUtilities.colorToRgb(color);
-			const br = colorUtilities.rgbToHsl(rgb).l / 100;
-			const shadow = `0 ${parseInt(5 * br)}px ${parseInt(10 + 15 * br)}px ${parseInt(6 * br)}px var(--color)`;
-			this.updatingCustomVariables(['--shadow'], [shadow]);
+	set scale(value) {
+		this._scale = this.validateAndSetArr(this.defaults.scale, value);
+		this.updatingCustomVariables(['--scalex', '--scaley'], this._scale, '%');
+	}
+	get scale() {
+		return this._scale;
+	}
+
+	#calculateShadow() {
+		if (this._glowOff) return '0';
+		
+		const rgb = colorUtilities.colorToRgb(this.color);
+		const br = colorUtilities.rgbToHsl(rgb).l / 100;
+		const intensity = parseInt(5 * br);
+		const blur = parseInt(10 + 15 * br);
+		const spread = parseInt(6 * br);
+		
+		return `0 ${intensity}px ${blur}px ${spread}px var(--color)`;
+	}
+
+	#updateColor() {
+		const computedStyle = getComputedStyle(this);
+		this.color = computedStyle.getPropertyValue('--color').trim();
+	}
+
+	#updateShadow() {
+		const shadow = this.#calculateShadow();
+		this.updatingCustomVariables(['--shadow'], [shadow]);
+	}
+
+	willUpdate(changedProperties) {
+		// Метод .every() (для "все"), .some() (для "хотя бы один"):
+		if (['glow-off'].some(key => changedProperties.has(key))) {
+			this.#updateShadow();
+		}
+		if (['style'].some(key => changedProperties.has(key))) {
+			this.#updateColor();
+			this.#updateShadow();
 		}
 	}
 
 	render() {
 		return html`
-			<div class="content"></div>
+			<div class="led"></div>
     	`;
+	}
+
+	firstUpdated() {
+		this.#updateColor();
+		this.#updateShadow();
+	}
+
+	connectedCallback() {
+		super.connectedCallback();
+		// Изменение размеров под родителя, если значения равны 0.
+		this.size = [
+			this._size[0] || this.parentElement?.innerSize[0],
+			this._size[1] || this.parentElement?.innerSize[1]
+		];
 	}
 
 }

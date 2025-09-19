@@ -5,6 +5,14 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 	static defaults = {
 		size: [2, 2],
 		position: [0, 0],
+		minmax: [0, 100],
+		value: 0,
+		fixed: 0,
+		units: '',
+		gaugeStyle: 'arc',
+		sectors: [[0, 50, "var(--color-red-200)"], [50, 100, "var(--color-lime-500)"]],
+		visibleRangeOff: false,
+		visibleValueOff: false,
 	};
 
 	static properties = {
@@ -28,21 +36,20 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		},
 		// Количество знаков после запятой при отображении.
 		fixed: {
+			attribute: 'fraction-digits',
 			type: Number
 		},
 		// Единицы измерения
 		units: {
 			type: String
 		},
-		// Минимальное значение
-		minValue: {
-			attribute: 'min-value',
-			type: Number
-		},
-		// Максимальное значение
-		maxValue: {
-			attribute: 'max-value',
-			type: Number
+		// Минимальное и максимальное значение
+		minmax: {
+			attribute: 'min-max',
+			type: Array,
+			converter: function (value, type) {
+				return value.split(' ').map(Number);
+			}
 		},
 		// Тип шкалы
 		gaugeStyle: {
@@ -51,7 +58,28 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		},
 		// Цвета секторов: [[start, end, color], ...]
 		sectors: {
-			type: Array
+			type: Array,
+			converter: function (value, type) {
+				const elements = value.split(',');
+				const sectors = [];
+				// Формируем массив групп по три элемента
+				for (let i = 0; i < elements.length; i += 3) {
+					const firstNum = parseInt(elements[i]);
+					const secondNum = parseInt(elements[i + 1]);
+					const thirdElem = elements[i + 2];
+					// Проверяем, что первые два элемента — действительные числа, а третий — строка
+					if (
+						Number.isInteger(firstNum) &&
+						Number.isInteger(secondNum) &&
+						typeof thirdElem === 'string'
+					) {
+						sectors.push([firstNum, secondNum, thirdElem]); // добавляем правильную группу
+					} else {
+						console.error(`Ошибка в группе: ${elements.slice(i, i + 3)}`);
+					}
+				}
+				return sectors;
+			}
 		},
 		// Отображать ли значение
 		visibleValueOff: {
@@ -95,21 +123,13 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 	constructor() {
 		super();
 
-		this.size = this.defaults.size;
-		this.position = this.defaults.position;
-		this.value = 0;
-		this.fixed = 0;
-		this.units = '';
-		this.minValue = 0;
-		this.maxValue = 100;
-		this.gaugeStyle = '34';
-		this.sectors = [[0, 10, "var(--color-red-200)"], [10, 40, "var(--color-orange-300)"], [40, 80, "var(--color-green-400)"], [80, 100, "var(--color-lime-500)"]];
-		this.visibleValueOff = false;
-		this.visibleRangeOff = false;
+		Object.assign(this, this.defaults);
+		this.minValue = this.minmax[0];
+		this.maxValue = this.minmax[1];
 
 		//
 		this.sectorWidth = 30; // Ширина сектора
-		this.widthTicksLine = 1; // Ширина линии делений
+		this.widthTicksLine = 0.5; // Ширина линии делений
 		// Размер поля
 		this.viewBoxWidth = 200;
 		this.viewBoxHeight = 200;
@@ -135,7 +155,6 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 			pointStart: null,
 			pointEnd: null,
 
-			majorTicksLine: null,
 			sectors: null,
 
 			// #gaugeValueUpdate()
@@ -150,9 +169,16 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 
 	set size(value) {
 		this._size = this.validateAndSetArr(this.defaults.size, value);
-
-		this._size[0] = this._size[0] || this.parentNode?.size[0];
-		this._size[1] = this._size[1] || this.parentNode?.size[1];
+		
+		// Изменение размеров под родителя, если значения равны 0.
+		if (this.parentElement) {
+			if (this._size[0] === 0) {
+				this._size[0] = this.parentElement?.innerSize[0];
+			}
+			if (this._size[1] === 0) {
+				this._size[1] = this.parentElement?.innerSize[1];
+			}
+		}
 
 		this.updatingCustomVariables(['--width', '--height'], this._size);
 	}
@@ -225,21 +251,32 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 			return;
 		}
 
-		let majorTicksLine = "0";
 		let currentOffset = 0;
 
+		let sectorIndex = 0;
+		let widthTicksStart = 0;
+		let widthTicksEnd = 0;
+
 		const normalizedSectors = this.sectors.map(([start, end, color]) => {
-			const startNorm = Math.max(this.minValue, Math.min(start, this.maxValue));
-			const endNorm = Math.max(this.minValue, Math.min(end, this.maxValue));
+			if (this.widthTicksLine != 0) {
+				widthTicksStart = this.widthTicksLine / 2;
+				widthTicksEnd = this.widthTicksLine / 2;
+			}
+			if (this.gaugeStyle != 'full') {
+				if (sectorIndex == 0) {
+					widthTicksStart = 0;
+				} else if (sectorIndex == this.sectors.length - 1) {
+					widthTicksEnd = 0;
+				}
+			}
+			const startNorm = Math.max(this.minValue, Math.min(start + widthTicksStart, this.maxValue));
+			const endNorm = Math.max(this.minValue, Math.min(end - widthTicksEnd, this.maxValue));
 			
 			// Вычисление смещений для dasharray
 			const fillStart = mathUtilities.mapRange(startNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart);
 			const fillEnd = mathUtilities.mapRange(endNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart);
 
-			// Формирование dasharray для текущего сектора
-			const arcLengthStart = (fillStart - currentOffset) * this._gauge.majorAngleToArc - (currentOffset ? this.widthTicksLine : 0);
-			majorTicksLine += ` ${arcLengthStart} ${this.widthTicksLine}`;
-			currentOffset = fillStart;
+			sectorIndex++;
 
 			return {
 				//start: Math.min(startNorm, endNorm),
@@ -249,14 +286,9 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 				color
 			};
 		});
-		//console.log('normalizedSectors', normalizedSectors);
-
-		// Добавление завершающего значения
-		majorTicksLine += ` ${this._gauge.majorTicksCircumference}`;
 
 		// Сохранение результатов
 		this._gauge.sectors = normalizedSectors.map(({fillStart, fillEnd, color}) => [fillStart, fillEnd, color]);
-		this._gauge.majorTicksLine = majorTicksLine;
 	}
 
 
@@ -287,7 +319,7 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 
 	willUpdate(changedProperties) {
 		// Метод .every() (для "все"), .some() (для "хотя бы один"):
-		if (['value', 'fixed', 'minValue', 'maxValue'].some(key => changedProperties.has(key))) {
+		if (['value', 'fraction-digits', 'minValue', 'maxValue'].some(key => changedProperties.has(key))) {
 			this.#gaugeCalculate();
 			this.#gaugeValueUpdate();
 		}
@@ -301,6 +333,13 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 
 	render() {
 		return this.#templateGauge();
+	}
+
+	connectedCallback() {
+		super.connectedCallback();
+		// Изменение размеров под родителя, если значения равны 0.
+		this.size = [this._size[0] || this.parentElement?.innerSize[0],
+			this._size[1] || this.parentElement?.innerSize[1]];
 	}
 
 	updated(changedProperties) {
@@ -326,17 +365,7 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 			</g>
 			<g id="gauge-scale" transform="rotate(90 ${this._gauge.halfWidth} ${this._gauge.halfWidth})">
 				<!-- Риски -->
-				<circle
-					cx="${this._gauge.halfWidth}"
-					cy="${this._gauge.halfWidth}"
-					r="${this._gauge.majorTicksRadius}"
-					stroke-width="${this.sectorWidth}" 
-					stroke-dasharray="${this._gauge.majorTicksLine}"
-					stroke-dashoffset="1"
-					stroke="var(--color-gray-50)"
-					fill="none"
-					stroke-opacity="1"
-				/>
+				
 				<!-- Стрелка -->
 				<polygon
 					id="hand"

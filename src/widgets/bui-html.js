@@ -59,10 +59,6 @@ export class BuiHtml extends BUIBaseWidget {
 
 	set size(value) {
 		this._size = this.validateAndSetArr(this.defaults.size, value);
-
-		this._size[0] = this._size[0] || this.parentNode?.size[0];
-		this._size[1] = this._size[1] || this.parentNode?.size[1];
-
 		this.updatingCustomVariables(['--width', '--height'], this._size);
 	}
 	get size() {

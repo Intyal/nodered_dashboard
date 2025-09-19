@@ -24,7 +24,7 @@ export class BUIBaseWidget extends LitElement {
 	 * @param {Array} values - Массив значений (числа или строки)
 	 * @param {Array} cssProperties - Массив CSS-свойств (например, ['--width', '--height'])
 	 */
-	updatingCustomVariables(cssProperties, values) {
+	updatingCustomVariables(cssProperties, values, unit = '') {
 		if (!Array.isArray(values) || !Array.isArray(cssProperties)) {
 			throw new TypeError('Значение должно быть массивом');
 		}
@@ -45,7 +45,7 @@ export class BUIBaseWidget extends LitElement {
 				// Сохраняем значение в экземпляре класса
 				//this[`_${property.replace('--', '')}`] = value;
 
-				this.#rule.setProperty(property, `${value}`);
+				this.#rule.setProperty(property, `${value}${unit}`);
 			}
 		}
 	}

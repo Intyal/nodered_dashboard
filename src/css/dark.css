@@ -248,12 +248,7 @@
 	--bui-widget-border-radius: 0.5rem;
 }
 
-bui-html {
-	--font-size: 1em;
-	--size: 100%;
-	--justify-content: center;
-}
-
+/* Стили для Стикеров */
 bui-sticker:not([type]) {
 	--margin: 0px 1px;
 	--padding: 1dvmin 1dvmin;
@@ -266,12 +261,12 @@ bui-sticker:not([type]) {
 
 	background: var(--bui-widget-background-color);
 }
-
 bui-sticker[type="group"] {
 	--margin: 0;
 	--padding: 0;
 
 	border: 0;
+	overflow: visible;
 
 	background: transponent;
 }
@@ -280,39 +275,38 @@ bui-sticker[type="group"] {
 
 } */
 
-/* bui-string {
+/* bui-string */
+bui-string[direction="vertup"] {
+	writing-mode: vertical-lr;
+	transform: scale(-1, -1);
+}
+bui-string[direction="vertdown"] {
+	writing-mode: vertical-lr;
+}
 
-} */
-
+/* bui-led */
+bui-led.led {
+	background: var(--color-gray-500);
+}
 bui-led {
 	--color: var(--color-gray-500);
-	--shadow: 0 5px 10px -1px var(--color-gray-500);
-	--sizex: 90%;
-	--sizey: 90%;
 	--border-radius: 7px 7px 5px 5px;
 	--border-bottom: 2px solid var(--color-gray-200);
 	--margin-top: 4px;
 }
-
-bui-led[options="horizontal"] {
+bui-led[options="horizontal"].led {
 	--border-radius: 7px 7px 5px 5px;
 }
-
-bui-led[options="vertical"] {
+bui-led[options="vertical"].led {
 	--border-radius: 7px 5px 5px 7px;
 	--border-bottom: 1px solid var(--color-gray-200);
 }
-
-bui-led[options="symmetrical"] {
+bui-led[options="symmetrical"].led {
 	--border-radius: 7px 7px 7px 7px;
 	--border-bottom: 1px solid var(--color-gray-200);
 }
 
-bui-html {
-	--dimensions: 100%;
-	--justify-content: center;
-}
-
+/* bui-icon */
 bui-icon {
 	--justify-content: center;
 	--align-items: center;
@@ -344,6 +338,25 @@ bui-icon {
 	/* Для старых версий WebKit */
 	-webkit-tap-highlight-color: transparent;
 
+	transition: all 0.1s ease-out;
+	cursor: pointer;
+}
+.switch-button-3d:active {
+	transform:
+		perspective(180px)    /* Глубина перспективы */
+		rotateX(-10deg)        /* Угол наклона */
+		translateZ(0);        /* Стабилизация */
+	transform-origin: center top;
+	box-shadow:
+		/* inset 0 -4em 1em rgba(0, 0, 0, 0.3), */
+		inset 0 2em 3em rgba(255, 255, 255, 0.1);
+}
+.switch-button-3d-dots {
+	/* Отключает outline */
+	outline: none;
+	/* Для старых версий WebKit */
+	-webkit-tap-highlight-color: transparent;
+
 	background-image: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.6) 0.1em, var(--bui-widget-background-color, transparent) 0.3em);
 	background-size: 8% 14%;
 	background-position: 2px 1px;
@@ -353,7 +366,7 @@ bui-icon {
 	cursor: pointer;
 }
 
-.switch-button-3d:active {
+.switch-button-3d-dots:active {
 	transform:
 		perspective(180px)    /* Глубина перспективы */
 		rotateX(-20deg)        /* Угол наклона */

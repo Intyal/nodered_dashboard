@@ -36,16 +36,18 @@ export class BUIString extends BUIBaseWidget {
 			overflow: hidden;
 
 			display: flex;
-			align-items: var(--align-items);
-			justify-content: var(--justify-content);
+			/*align-items: var(--align-items);*/
+			/*justify-content: var(--justify-content);*/
 			writing-mode: var(--writing-mode);
 			transform: var(--transform);
 		}
 		.string {
-			/* align-items: var(--align-items-text, center); */
+			text-align: var(--text-align);
+			align-self: var(--align-self);
 			font-size: var(--font-size);
 			color: var(--color);
 			line-height: 1.0;
+			flex-grow: 1;
 			/*letter-spacing: -0.025em;*/
 		}
 	`;
@@ -53,15 +55,21 @@ export class BUIString extends BUIBaseWidget {
 	constructor() {
 		super();
 
-		this.size = this.defaults.size;
-		this.position = this.defaults.position;
+		Object.assign(this, this.defaults);
 	}
 
 	set size(value) {
 		this._size = this.validateAndSetArr(this.defaults.size, value);
-
-		this._size[0] = this._size[0] || this.parentNode?.size[0];
-		this._size[1] = this._size[1] || this.parentNode?.size[1];
+		
+		// Изменение размеров под родителя, если значения равны 0.
+		if (this.parentElement) {
+			if (this._size[0] === 0) {
+				this._size[0] = this.parentElement?.innerSize[0];
+			}
+			if (this._size[1] === 0) {
+				this._size[1] = this.parentElement?.innerSize[1];
+			}
+		}
 
 		this.updatingCustomVariables(['--width', '--height'], this._size);
 	}
@@ -92,6 +100,16 @@ export class BUIString extends BUIBaseWidget {
 				<slot></slot>
 			</div>
     	`;
+	}
+
+	connectedCallback() {
+		super.connectedCallback();
+		// При добавлении в DOM
+		// Изменение размеров под родителя, если значения равны 0.
+		this.size = [
+			this._size[0] || this.parentElement?.innerSize[0],
+			this._size[1] || this.parentElement?.innerSize[1]
+		];
 	}
 
 }
