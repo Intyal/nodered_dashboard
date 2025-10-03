@@ -1,7 +1,7 @@
 {
     "name": "Барабашка Node-RED UI",
     "short_name": "Барабашка",
-    "start_url": "/dashboard",
+    "start_url": "/dashboard2",
     "lang": "ru",
     "display": "fullscreen",
     "prefer_related_applications": false,

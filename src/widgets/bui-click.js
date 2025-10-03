@@ -2,6 +2,14 @@ import { html, css } from '../js/lit-all.min.js';
 import { BUIBaseWidget } from '../js/bui-base-widget.js';
 
 export class BuiClick extends BUIBaseWidget {
+	static defaults = {
+		target: '',
+		action: 'message',
+		data: '',
+		params: '{}',
+		actionClass: '',
+	};
+
 	static properties = {
 		// ID целевого элемента для привязки события
 		target: {
@@ -18,7 +26,12 @@ export class BuiClick extends BUIBaseWidget {
 		// Дополнительные параметры в формате JSON
 		params: {
 			type: String
-		}
+		},
+		// CSS класс для целевого элемента
+		actionClass: {
+			attribute: 'action-class',
+			type: String,
+		},
 	};
 
 	static styles = css`
@@ -29,10 +42,9 @@ export class BuiClick extends BUIBaseWidget {
 
 	constructor() {
 		super();
-		this.target = '';
-		this.action = 'message'; // по умолчанию
-		this.data = '';
-		this.params = '{}';
+		
+		Object.assign(this, this.defaults);
+
 		this._boundHandler = null;
 		this._targetElement = null;
 	}
@@ -67,12 +79,21 @@ export class BuiClick extends BUIBaseWidget {
 
 		this._targetElement = document.getElementById(this.target);
 		if (!this._targetElement) {
-			console.warn(`BuiClick: Target element with id "${this.target}" not found`);
+			console.warn(`BuiClick: Целевой элемент с идентификатором "${this.target}" не найден`);
 			return;
 		}
 
 		this._boundHandler = this._handleEvent.bind(this);
 		this._targetElement.addEventListener('click', this._boundHandler);
+		// Добавляем, если уканан, CSS класс к целевому элементу
+		if (this.actionClass) {
+			const classes = this.actionClass.split(" ");
+			classes.forEach(className => {
+				if (!this._targetElement.classList.contains(className)) {
+					this._targetElement.classList.add(className);
+				}
+			});
+		}
 	}
 
 	_unbindEventHandler() {
@@ -107,16 +128,16 @@ export class BuiClick extends BUIBaseWidget {
 					console.warn(`BuiClick: Unknown action type "${this.action}"`);
 			}
 		} catch (error) {
-			console.error('BuiClick: Error parsing params JSON:', error);
+			console.error('BuiClick: Ошибка при разборе параметров JSON:', error);
 		}
 	}
 
-	_changeTopic(type, params) {
-		if (!type) return;
+	_changeTopic(value, params) {
+		if (!value) return;
 
 		const event = new CustomEvent('bui-topic-set', {
 			detail: {
-				type: type,
+				value: value,
 				params: params,
 				source: this.id
 			},
@@ -124,7 +145,7 @@ export class BuiClick extends BUIBaseWidget {
 			composed: true
 		});
 		
-		console.log(`BuiClick: Передать значение в топик. "${type}"`, params);
+		//console.log(`BuiClick: Передать значение "${value}" в свойство ${params.property} топика "${params.topic} ".`, params);
 		this.dispatchEvent(event);
 	}
 
@@ -142,7 +163,7 @@ export class BuiClick extends BUIBaseWidget {
 			composed: true
 		});
 		
-		console.log(`BuiClick: Message sent - "${message}"`, params);
+		//console.log(`BuiClick: Message sent - "${message}"`, params);
 		this.dispatchEvent(event);
 	}
 
@@ -160,6 +181,7 @@ export class BuiClick extends BUIBaseWidget {
 			composed: true
 		});
 		
+		//console.log(`BuiClick: Выбор страницы`, pageName, params, this.target);
 		this.dispatchEvent(event);
 	}
 
@@ -167,7 +189,7 @@ export class BuiClick extends BUIBaseWidget {
 		if (!stateName) return;
 
 		// Переключаем состояние через кастомное событие
-		// params='{"topic": "zigbee2mqtt/light_switch_hall", "prop": "state", "states": "[ON, OFF]", "current": "OFF"}'
+		// params='{"topic": "zigbee2mqtt/light_switch_hall", "property": "state", "states": "[ON, OFF]", "current": "OFF"}'
 		const event = new CustomEvent('bui-click-toggle', {
 			detail: {
 				state: stateName,
@@ -180,7 +202,7 @@ export class BuiClick extends BUIBaseWidget {
 		});
 		
 		this.dispatchEvent(event);
-		console.log(`BuiClick: State "${stateName}" toggled`, params);
+		//console.log(`BuiClick: State "${stateName}" toggled`, params);
 	}
 
 	_executeCustomAction(actionName, params) {
@@ -198,7 +220,7 @@ export class BuiClick extends BUIBaseWidget {
 		});
 		
 		this.dispatchEvent(event);
-		console.log(`BuiClick: Custom action "${actionName}" executed`, params);
+		//console.log(`BuiClick: Custom action "${actionName}" executed`, params);
 	}
 }
 

@@ -17,4 +17,13 @@ html {
 body {
 	background: var(--bui-background-color);
 	margin: 0px;
+	padding-top: env(safe-area-inset-top, 0px); /* 0px - значение по умолчанию, если env не поддерживается */
+  	padding-bottom: env(safe-area-inset-bottom, 0px); /* Для нижней навигации */
+}
+
+.hidden {
+	visibility: hidden;
+	outline: none;
+	-webkit-tap-highlight-color: transparent;
+	cursor: pointer;
 }

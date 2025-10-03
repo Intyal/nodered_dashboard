@@ -124,12 +124,10 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		super();
 
 		Object.assign(this, this.defaults);
-		this.minValue = this.minmax[0];
-		this.maxValue = this.minmax[1];
 
 		//
 		this.sectorWidth = 30; // Ширина сектора
-		this.widthTicksLine = 0.5; // Ширина линии делений
+		this.widthTicksLine = 1; // Ширина линии делений
 		// Размер поля
 		this.viewBoxWidth = 200;
 		this.viewBoxHeight = 200;
@@ -251,17 +249,14 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 			return;
 		}
 
-		let currentOffset = 0;
+		this.minValue = this.minmax[0];
+		this.maxValue = this.minmax[1];
 
 		let sectorIndex = 0;
-		let widthTicksStart = 0;
-		let widthTicksEnd = 0;
+		let widthTicksStart = this.widthTicksLine;
+		let widthTicksEnd = this.widthTicksLine;
 
 		const normalizedSectors = this.sectors.map(([start, end, color]) => {
-			if (this.widthTicksLine != 0) {
-				widthTicksStart = this.widthTicksLine / 2;
-				widthTicksEnd = this.widthTicksLine / 2;
-			}
 			if (this.gaugeStyle != 'full') {
 				if (sectorIndex == 0) {
 					widthTicksStart = 0;
@@ -269,12 +264,12 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 					widthTicksEnd = 0;
 				}
 			}
-			const startNorm = Math.max(this.minValue, Math.min(start + widthTicksStart, this.maxValue));
-			const endNorm = Math.max(this.minValue, Math.min(end - widthTicksEnd, this.maxValue));
+			const startNorm = Math.max(this.minValue, Math.min(start, this.maxValue));
+			const endNorm = Math.max(this.minValue, Math.min(end, this.maxValue));
 			
 			// Вычисление смещений для dasharray
-			const fillStart = mathUtilities.mapRange(startNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart);
-			const fillEnd = mathUtilities.mapRange(endNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart);
+			const fillStart = mathUtilities.mapRange(startNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart) + widthTicksStart;
+			const fillEnd = mathUtilities.mapRange(endNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart) - widthTicksEnd;
 
 			sectorIndex++;
 
@@ -319,12 +314,12 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 
 	willUpdate(changedProperties) {
 		// Метод .every() (для "все"), .some() (для "хотя бы один"):
-		if (['value', 'fraction-digits', 'minValue', 'maxValue'].some(key => changedProperties.has(key))) {
+		if (['value', 'fraction-digits'].some(key => changedProperties.has(key))) {
 			this.#gaugeCalculate();
 			this.#gaugeValueUpdate();
 		}
 		// Если изменился тип шкалы
-		if (['gaugeStyle'].some(key => changedProperties.has(key))) {
+		if (['gaugeStyle', 'minmax'].some(key => changedProperties.has(key))) {
 			this.#gaugeStyleUpdate();
 			this.#gaugeSectorUpdate();
 			this.#gaugeValueUpdate();
@@ -400,7 +395,7 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 			</g>
 			<!-- Текущее значение в цифре -->
 			${this.visibleValueOff ? `` : svg`
-			<g fill="var(--bui-widget-color)">
+			<g fill="var(--colorValue)">
 				<text id="digit-value" x="${this._gauge.valuePosition[0]}" y="${this._gauge.valuePosition[1]}" dx="${this._gauge.valuePosition[2]}" dy="${this._gauge.valuePosition[3]}" text-anchor="middle" class="value">
 					${this._gauge.fixedValue}
 				</text>
@@ -411,7 +406,7 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 			`}
 			${this.visibleRangeOff ? `` : svg`
 			<!-- Мин/Макс значения -->
-			<g fill="var(--bui-widget-color)">
+			<g fill="var(--colorValue)">
 				<text x="0" y="100%" dx="0" dy="0" text-anchor="start" class="label-ranges">${this.minValue}</text>
 				<text x="100%" y="100%" dx="0" dy="0" text-anchor="end" class="label-ranges">${this.maxValue}</text>
 			</g>

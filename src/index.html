@@ -4,7 +4,7 @@
 
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="icon" href="./icons/bui.ico">
+	<link rel="icon" href="./images/bui.ico">
 	<!-- https://pwa-workshop.js.org/1-manifest/#manifest-fields -->
 	<link rel="manifest" href="manifest.json">
 
@@ -21,40 +21,6 @@
 
 <body>
 	<bui-book id="bui_book" tab-style="bottom">
-		<bui-page slot="bookmarks" id="bookmarks_page" class="panel-background-cell" number-cells="10" active>
-			<bui-icon size="1 1" name="brilliance" style="--font-size: 3em;" id="bi1"></bui-icon>
-			<bui-click target="bi1" action="select-page" data="page0"></bui-click>
-			<bui-icon size="1 1" name="brilliance" style="--font-size: 3em;" id="bi2"></bui-icon>
-			<bui-click target="bi2" action="select-page" data="page1"></bui-click>
-			<bui-icon size="1 1" name="brilliance" style="--font-size: 3em;" id="bi3"></bui-icon>
-			<bui-click target="bi3" action="select-page" data="bui_4f67e2c6724c27dd"></bui-click>
-		</bui-page>
-		<bui-page slot="pages" id="page0" class="panel-background-dot" number-cells="20">
-			<bui-string size="20 1" style="--font-size: 5em;">Свет</bui-string>
-			<bui-sticker type="group"  size="20 7" inner-size="3 1">
-				<bui-sticker size="1 1" inner-size="5 7">
-					<bui-string size="5 1" style="--font-size: 4em;">Кухня</bui-string>
-					<bui-icon size="5 4" library="boxicons" name="bx-dishwasher" style="--font-size: 10em;"></bui-icon>
-					<bui-sticker type="group"  size="5 2" id="button_1">
-						<bui-led size="3 1" position="2 2" scale="80 45" style="--color: var(--color-cyan-700)" options="horizontal"></bui-led>
-					</bui-sticker>
-				</bui-sticker>
-				<bui-sticker size="1 1" inner-size="5 7">
-					<bui-string size="5 1" style="--font-size: 4em;">Кухня</bui-string>
-					<bui-icon size="5 4" library="boxicons" name="bx-dishwasher" style="--font-size: 10em;"></bui-icon>
-					<bui-sticker type="group"  size="5 2" class="switch-button-3d-dots" id="button_2">
-						<bui-led size="3 1" position="2 2" scale="80 45" style="--color: var(--color-cyan-700)" options="horizontal"></bui-led>
-					</bui-sticker>
-				</bui-sticker>
-				<bui-sticker size="1 1" inner-size="5 7">
-					<bui-string size="5 1" style="--font-size: 4em;">Кухня</bui-string>
-					<bui-icon size="5 4" library="boxicons" name="bx-dishwasher" style="--font-size: 10em;"></bui-icon>
-					<bui-sticker type="group"  size="5 2" class="switch-button-3d-dots" id="button_3">
-						<bui-led size="3 1" position="2 2" scale="80 45" style="--color: var(--color-cyan-700)" options="horizontal"></bui-led>
-					</bui-sticker>
-				</bui-sticker>
-			</bui-sticker>
-		</bui-page>
 		<bui-page slot="pages" id="page1" class="panel-background-dot" number-cells="20">
 			<bui-sticker type="group"  size="5 7">
 				<bui-sticker size="5 5">
@@ -62,14 +28,14 @@
 					<bui-icon size="5 3" library="boxicons" name="bx-dishwasher" style="--font-size: 10em;"></bui-icon>
 				</bui-sticker>
 				
-				<bui-sticker type="group" size="5 2" class="switch-button-3d-dots" id="button_4">
+				<bui-sticker type="group" size="5 2" class="switch-button-rotate-dots" id="button_4">
 					<bui-led size="3 1" position="2 2" scale="80 45" style="--color: var(--color-cyan-700)" options="horizontal"></bui-led>
 				</bui-sticker>
 				<bui-click 
 					target="button_4" 
-					action="message" 
-					data="user-login"
-					params='{"userId": 123, "timestamp": "2024-01-01"}'>
+					action="select-page" 
+					data="page1"
+					params='{&quot;activeColor&quot;:&quot;var(--color-cyan-700)&quot;}'>
 				</bui-click>
 			</bui-sticker>
 
@@ -93,14 +59,16 @@
 				<bui-icon size="2 2" name="stars" style="--font-size: 8em;" id="i4"></bui-icon>
 				<bui-icon size="4 4" name="brilliance" style="--font-size: 12em;" id="i5"></bui-icon>
 				<bui-click 
-					target="i5" 
-					action="topic-set" 
+					target="i5"
+					action="topic-set"
 					data="toggle"
 					params='{"topic": "zigbee2mqtt/light_switch_hall", "property": "state"}'>
 				</bui-click>
 			</bui-sticker>
 			<bui-sticker size="6" id="st5">
-				<bui-string size="3 1" style="--font-size: 3em;" id="s1">Строка</bui-string>
+				<bui-string size="6 1" style="--font-size: 3em;" id="s1">
+					<time-formatted last-time="1758795140201" style-time="long" live></time-formatted>
+				</bui-string>
 			</bui-sticker>
 			<bui-sticker size="2 4" id="st6">
 				<bui-string size="1 3" direction="vertdown" style="--font-size: 3em;" id="s2">Строка</bui-string>

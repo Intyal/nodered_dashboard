@@ -240,12 +240,16 @@
 	--bui-font-family: Jost, sans-serif;
 
 	--bui-widget-background-color: var(--color-gray-50);
-	--bui-widget-color: var(--color-neutral-1000);
+	/* --color: var(--color-neutral-1000); */
 
 	--bui-tab-color: var(--color-gray-950);
 	--bui-tab-color-active: var(--color-orange-500);
 
 	--bui-widget-border-radius: 0.5rem;
+}
+
+.bookmark-a-page[active] {
+	--color: var(--color-orange-600);
 }
 
 /* Стили для Стикеров */
@@ -268,7 +272,7 @@ bui-sticker[type="group"] {
 	border: 0;
 	overflow: visible;
 
-	background: transponent;
+	background: transparent;
 }
 
 /* bui-number {
@@ -277,7 +281,7 @@ bui-sticker[type="group"] {
 
 /* bui-string */
 bui-string[direction="vertup"] {
-	writing-mode: vertical-lr;
+	writing-mode: tb;
 	transform: scale(-1, -1);
 }
 bui-string[direction="vertdown"] {
@@ -289,7 +293,7 @@ bui-led.led {
 	background: var(--color-gray-500);
 }
 bui-led {
-	--color: var(--color-gray-500);
+	/* --color: var(--color-gray-500); */
 	--border-radius: 7px 7px 5px 5px;
 	--border-bottom: 2px solid var(--color-gray-200);
 	--margin-top: 4px;
@@ -312,6 +316,11 @@ bui-icon {
 	--align-items: center;
 }
 
+/* bui-gauge-circle2 */
+bui-gauge-circle2 {
+	--colorValue: var(--color-neutral-1000);
+}
+
 .panel-background-cell::part(page) {
 	/* linear-gradient - https://doka.guide/css/linear-gradient/ */
 	/* calc() - https://doka.guide/css/calc/ */
@@ -330,9 +339,8 @@ bui-icon {
 	background-position: 1px -1px;
 }
 
-
-/* Кнопка с анимацией и трапецивидным видом */
-.switch-button-3d {
+/* Кнопка с анимацией вращения */
+.switch-button-scale {
 	/* Отключает outline */
 	outline: none;
 	/* Для старых версий WebKit */
@@ -341,17 +349,35 @@ bui-icon {
 	transition: all 0.1s ease-out;
 	cursor: pointer;
 }
-.switch-button-3d:active {
+.switch-button-scale:active {
+	transform: scale(0.90);
+	transform-origin: center;
+	box-shadow:
+		inset 0 2em 3em rgba(255, 255, 255, 0.1),
+		inset 0 -2em 3em rgba(0, 0, 0, 0.6);
+}
+/* Кнопка с анимацией вращения */
+.switch-button-rotate {
+	/* Отключает outline */
+	outline: none;
+	/* Для старых версий WebKit */
+	-webkit-tap-highlight-color: transparent;
+
+	transition: all 0.1s ease-out;
+	cursor: pointer;
+}
+.switch-button-rotate:active {
 	transform:
 		perspective(180px)    /* Глубина перспективы */
 		rotateX(-10deg)        /* Угол наклона */
 		translateZ(0);        /* Стабилизация */
 	transform-origin: center top;
 	box-shadow:
-		/* inset 0 -4em 1em rgba(0, 0, 0, 0.3), */
-		inset 0 2em 3em rgba(255, 255, 255, 0.1);
+		inset 0 2em 3em rgba(255, 255, 255, 0.1),
+		inset 0 -2em 6em rgba(0, 0, 0, 0.6);
 }
-.switch-button-3d-dots {
+/* Кнопка с анимацией вращения и фоном с точками */
+.switch-button-rotate-dots {
 	/* Отключает outline */
 	outline: none;
 	/* Для старых версий WebKit */
@@ -365,8 +391,7 @@ bui-icon {
 	transition: all 0.1s ease-out;
 	cursor: pointer;
 }
-
-.switch-button-3d-dots:active {
+.switch-button-rotate-dots:active {
 	transform:
 		perspective(180px)    /* Глубина перспективы */
 		rotateX(-20deg)        /* Угол наклона */

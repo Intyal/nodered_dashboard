@@ -7,7 +7,7 @@ export class BUIIcon extends BUIBaseWidget {
 		size: [1, 1],
 		position: [0, 0],
 		library: 'default',
-		name: 'image',
+		name: '',
 		src: '',
 	};
 	
@@ -139,6 +139,7 @@ export class BUIIcon extends BUIBaseWidget {
 		const library = getIconLibrary(this.library);
 		if (!library) throw new Error(`Библиотека "${this.library}" не найдена`);
 	
+		if (!this.name) return;
 		// getIcon() возвращает готовый к использованию клон
 		const svgElement = await library.getIcon(this.name);
 		if (!svgElement) throw new Error(`Иконка "${this.name}" не существует`);

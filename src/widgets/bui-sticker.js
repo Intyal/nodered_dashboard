@@ -66,6 +66,17 @@ export class BUISticker extends BUIBaseWidget {
 
 	set size(value) {
 		this._size = this.validateAndSetArr(this.defaults.size, value);
+		
+		// Изменение размеров под родителя, если значения равны 0.
+		if (this.parentElement) {
+			if (this._size[0] === 0) {
+				this._size[0] = this.parentElement?.innerSize[0];
+			}
+			if (this._size[1] === 0) {
+				this._size[1] = this.parentElement?.innerSize[1];
+			}
+		}
+
 		this.updatingCustomVariables(['--width', '--height'], this._size);
 
 		if (!this.getAttribute('inner-size')) {
@@ -96,6 +107,16 @@ export class BUISticker extends BUIBaseWidget {
 		return html`
 			<slot></slot>
     	`;
+	}
+
+	connectedCallback() {
+		super.connectedCallback();
+		// При добавлении в DOM
+		// Изменение размеров под родителя, если значения равны 0.
+		this.size = [
+			this._size[0] || this.parentElement?.innerSize[0],
+			this._size[1] || this.parentElement?.innerSize[1]
+		];
 	}
 }
 

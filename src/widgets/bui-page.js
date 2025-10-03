@@ -17,7 +17,6 @@ export class BUIPage extends BUIBaseWidget {
 	static styles = css`
 		:host {
 			--bui-background-cell-size: calc(100dvw / var(--number-cells));
-			--bui-background-cell-height-count: 1;
 			--page-atom-size: calc(var(--bui-background-cell-size) / 5);
 			
 			display: none;
@@ -29,13 +28,15 @@ export class BUIPage extends BUIBaseWidget {
 			letter-spacing: -0.1em;
 		}
 		:host([active]) {
-			display: block;
+			display: flex;
 		}
 		#page {
+			flex-grow: 1;
+
 			display: grid;
 			grid-auto-flow: row;
 			grid-template-columns: repeat(auto-fill, var(--bui-background-cell-size));
-			grid-template-rows: repeat(var(--bui-background-cell-height-count), var(--bui-background-cell-size));
+			grid-template-rows: repeat(auto-fill, var(--bui-background-cell-size));
 			grid-auto-rows: var(--bui-background-cell-size);
 			gap: 0px;
 
@@ -67,9 +68,10 @@ export class BUIPage extends BUIBaseWidget {
 	firstUpdated() {
 		if (this.slot === 'pages') {
 			// Проверяем, выбрана ли эта страница
-			const selectedPage = window.localStorage.getItem('selectedPage');
+			const selectedPage = window.localStorage.getItem(`${window.location.pathname}selectedPage`);
 			if (selectedPage === this.id) {
 				this.active = true;
+				this.activeLabels(this.id);
 			}
 		}
 	}
@@ -89,10 +91,13 @@ export class BUIPage extends BUIBaseWidget {
 		if (this.slot === 'pages') {
 			this.handleTopicSet = event => { // сохраняем обработчик как свойство класса
 				if (event.detail.page === this.id) {
+					//console.log(event.detail, this.id);
 					if (!this.active) {
 						this.active = true;
+						this.activeLabels(this.id);
+						
 						// Записываем выбранную страницу в localStorage
-						window.localStorage.setItem('selectedPage', this.id);
+						window.localStorage.setItem(`${window.location.pathname}selectedPage`, this.id);
 					}
 				} else {
 					this.active = false;
@@ -110,6 +115,20 @@ export class BUIPage extends BUIBaseWidget {
 		}
 		
 		super.disconnectedCallback();
+	}
+
+	activeLabels(pageId) {
+		// Ставим/убираем атрибут active для всех элементов с классом bookmarks в bui-page slot="bookmarks"
+		const labelsAll = document.querySelectorAll('.bookmark-a-page');
+		labelsAll.forEach(label => {
+			label.removeAttribute('active')
+		});
+		//console.log(labelsAll);
+		const labelsSelected = document.querySelectorAll(`.bookmark-a-page.${pageId}`);
+		labelsSelected.forEach(label => {
+			label.setAttribute('active', '');
+		});
+		//console.log(labelsSelected);
 	}
 }
 

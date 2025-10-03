@@ -79,7 +79,7 @@ export class IconLibrary {
 			// Кэшируем и возвращаем placeholder для ошибок
 			this._iconCache.set(name, errorIcon.cloneNode(true));
 			this._loadingPromises.delete(name);
-			console.error(`Ошибка загрузки иконки "${name}" из библиотеки "${this.name}":`, error);
+			//console.error(`Ошибка загрузки иконки "${name}" из библиотеки "${this.name}":`, error);
 			return errorIcon.cloneNode(true);
 		}
 	}

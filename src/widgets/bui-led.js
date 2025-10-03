@@ -60,7 +60,7 @@ export class BUILed extends BUIBaseWidget {
 			max-width: var(--scalex);
 			min-height: var(--scaley);
 			/*max-height: 100%;*/
-			background: var(--color);
+			background: var(--color, grey);
 			box-shadow: var(--shadow);
 			border-radius: var(--border-radius);
 			border-bottom: var(--border-bottom);
