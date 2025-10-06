@@ -60,8 +60,7 @@ export class BUISticker extends BUIBaseWidget {
 	constructor() {
 		super();
 
-		this.size = this.defaults.size;
-		this.position = this.defaults.position;
+		Object.assign(this, this.defaults);
 	}
 
 	set size(value) {

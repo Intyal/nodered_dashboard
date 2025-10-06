@@ -2,11 +2,20 @@ import { html, css } from '../js/lit-all.min.js';
 import { BUIBaseWidget, mathUtilities } from '../js/bui-base-widget.js';
 
 export class BUIPage extends BUIBaseWidget {
+	static defaults = {
+		numberOfCells: 20,
+		innerSize: [20, 1],
+	};
+	
 	static properties = {
 		// Количество ячейки на странице по горизонтали. Отражается в CSS-переменной `--number-cells`.
 		numberOfCells: {
 			attribute: 'number-cells',
 			type: Number
+		},
+		innerSize: {
+			type: Array,
+			state: true,
 		},
 		active: {
 			type: Boolean,
@@ -47,7 +56,7 @@ export class BUIPage extends BUIBaseWidget {
 	constructor() {
 		super();
 
-		this.numberOfCells = 20;
+		Object.assign(this, this.defaults);
 	}
 
 	set numberOfCells(value) {
@@ -56,10 +65,11 @@ export class BUIPage extends BUIBaseWidget {
 			return;
 		}
 		if (!mathUtilities.isInRange(value, 1, 128)) {
-			console.warn(`[${this.constructor.name}][numberOfCells] Новое значение не входит в диапазон от 1 до 100`);
+			console.warn(`[${this.constructor.name}][numberOfCells] Новое значение не входит в диапазон от 1 до 128`);
 		}
 		this.updatingCustomVariables(['--number-cells'], [Math.ceil(value)]);
 		this._numberOfCells = Math.ceil(value);
+		this.innerSize = [this._numberOfCells, 1];
 	}
 	get numberOfCells() {
 		return this._numberOfCells;
@@ -69,9 +79,18 @@ export class BUIPage extends BUIBaseWidget {
 		if (this.slot === 'pages') {
 			// Проверяем, выбрана ли эта страница
 			const selectedPage = window.localStorage.getItem(`${window.location.pathname}selectedPage`);
-			if (selectedPage === this.id) {
+			if (selectedPage) {
+				if (selectedPage === this.id) {
+					this.active = true;
+					this.activeLabels(this.id);
+				}
+			} else {
+				// Если никакая страница не выбрана
 				this.active = true;
 				this.activeLabels(this.id);
+				
+				// Записываем выбранную страницу в localStorage
+				window.localStorage.setItem(`${window.location.pathname}selectedPage`, this.id);
 			}
 		}
 	}
