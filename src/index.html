@@ -60,14 +60,16 @@
 				<bui-icon size="4 4" name="brilliance" style="--font-size: 12em;" id="i5"></bui-icon>
 				<bui-click 
 					target="i5"
-					action="topic-set"
-					data="toggle"
-					params='{"topic": "zigbee2mqtt/light_switch_hall", "property": "state"}'>
+					action="select-page"
+					data="bui_066d3488273775fc">
 				</bui-click>
 			</bui-sticker>
-			<bui-sticker size="6" id="st5">
+			<bui-sticker size="6 2" id="st5">
 				<bui-string size="6 1" style="--font-size: 3em;" id="s1">
 					<time-formatted last-time="1758795140201" style-time="long" live></time-formatted>
+				</bui-string>
+				<bui-string size="6 1" style="--font-size: 3em;" id="s1">
+					<time-formatted year="numeric" hour="numeric" minute="numeric" live></time-formatted>
 				</bui-string>
 			</bui-sticker>
 			<bui-sticker size="2 4" id="st6">

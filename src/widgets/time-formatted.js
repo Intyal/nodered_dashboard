@@ -1,192 +1,161 @@
-/**
- * Кастомный элемент для форматированного отображения времени и относительных временных промежутков
- * Поддерживает как абсолютные даты, так и относительные (например, "5 минут назад")
- */
-class TimeFormatted extends HTMLElement {
+import { html } from '../js/lit-all.min.js';
+import { BUIBaseWidget } from '../js/bui-base-widget.js';
+
+export class TimeFormatted extends BUIBaseWidget {
+	static defaults = {
+		datetime: Date.now(),
+		lasttime: undefined,
+		year: undefined,
+		month: undefined,
+		day: undefined,
+		hour: undefined,
+		minute: undefined,
+		second: undefined,
+		weekday: undefined,
+		numeric: 'auto',
+		styleTime: 'short',
+		locale: navigator.language,
+		timeZone: undefined,
+		relative: false,
+		live: false,
+	};
+
+	static properties = {
+		// 
+		datetime: {
+			type: String,
+			attribute: 'date-time',
+			reflect: true,
+		},
+		// 
+		lasttime: {
+			type: String,
+			attribute: 'last-time',
+		},
+		// 
+		year: {
+			type: String,
+		},
+		// 
+		month: {
+			type: String,
+		},
+		// 
+		day: {
+			type: String,
+		},
+		// 
+		hour: {
+			type: String,
+		},
+		// 
+		minute: {
+			type: String,
+		},
+		// 
+		second: {
+			type: String,
+		},
+		// 
+		weekday: {
+			type: String,
+		},
+		//
+		numeric: {
+			type: String,
+		},
+		// 
+		styleTime: {
+			type: String,
+			attribute: 'style-time',
+		},
+		// 
+		locale: {
+			type: String,
+		},
+		// 
+		timeZone: {
+			type: String,
+			attribute: 'time-zone',
+		},
+		// 
+		relative: {
+			type: Boolean,
+		},
+		// 
+		live: {
+			type: Boolean,
+		},
+	};
+
 	constructor() {
 		super();
-		// ID интервала для live-обновлений
-		this._intervalId = null;
-		// Время последнего рендера для throttle
-		this._lastRenderTime = 0;
-		// Таймер throttle
-		this._renderThrottleTimeout = null;
+
+		Object.assign(this, this.defaults);
+
+		this.timeoutId = null;
 	}
 
-	/**
-	 * Вызывается при подключении элемента в DOM
-	 */
-	connectedCallback() {
-		this.render();
-	}
+	set datetime(value) {
+		this._datetime = this.toDate(value);
 
-	/**
-	 * Вызывается при удалении элемента из DOM
-	 */
-	disconnectedCallback() {
-		// Очищаем все интервалы и таймеры
-		this.clearInterval();
-		if (this._renderThrottleTimeout) {
-			clearTimeout(this._renderThrottleTimeout);
-			this._renderThrottleTimeout = null;
+		if (this.live) {
+			this.scheduleAction();
 		}
 	}
-
-	/**
-	 * Очищает интервал live-обновлений
-	 */
-	clearInterval() {
-		if (this._intervalId) {
-			clearInterval(this._intervalId);
-			this._intervalId = null;
-		}
+	get datetime() {
+		return this._datetime;
 	}
 
-	/**
-	 * Основной метод рендеринга элемента
-	 * @param {boolean} throttle - если true, ограничивает частоту обновлений
-	 */
-	render(throttle = false) {
-		// Ограничиваем частоту обновлений при быстрых изменениях атрибутов
-		if (throttle) {
-			const now = Date.now();
-			// Если с последнего рендера прошло меньше 500мс - откладываем обновление
-			if (now - this._lastRenderTime < 500) {
-				if (!this._renderThrottleTimeout) {
-					this._renderThrottleTimeout = setTimeout(() => {
-						this.render(false);
-						this._renderThrottleTimeout = null;
-					}, 500 - (now - this._lastRenderTime));
-				}
-				return;
-			}
+	set lasttime(value) {
+		this._lasttime = this.toTimestamp(value);
+	}
+	get lasttime() {
+		return this._lasttime;
+	}
+
+	set live(value) {
+		this._live = value;
+
+		if (value) {
+			this.delayedAction();
 		}
+	}
+	get live() {
+		return this._live;
+	}
 
-		this.clearInterval();
-		this._lastRenderTime = Date.now();
-
-		// Получаем атрибуты элемента
-		const lastTime = this.getAttribute('last-time');
-		const live = this.hasAttribute('live');
-		const locale = this.getAttribute('locale') || navigator.language;
-		const styleTime = this.getAttribute('style-time') || 'short';
-
+	render() {
 		// Выбираем режим работы: относительное время или абсолютная дата
-		if (lastTime) {
-			const timestamp = parseInt(lastTime, 10);
-			if (!isNaN(timestamp)) {
-				this.updateRelativeTime(timestamp, live, locale, styleTime);
-			} else {
-				this.textContent = ''; // Очищаем при невалидном timestamp
-			}
+		if (this.lasttime) {
+			return html`${this.updateRelativeTime()}`;
+		} else if (this.relative) {
+			return html``;
 		} else {
-			this.updateFormattedTime(live, locale);
+			return html`${this.updateFormattedTime()}`;
 		}
 	}
 
-	/**
-	 * Обновляет элемент в режиме относительного времени (например, "5 минут назад")
-	 * @param {number} timestamp - временная метка
-	 * @param {boolean} live - нужно ли live-обновление
-	 * @param {string} locale - локаль для форматирования
-	 * @param {string} styleTime - стиль отображения ('long' или 'short')
-	 */
-	updateRelativeTime(timestamp, live, locale, styleTime) {
-		// Функция для обновления содержимого
-		const updateContent = () => {
-			this.textContent = this.getTimePassed(timestamp, styleTime, locale);
-		};
-
-		// Первоначальное обновление
-		updateContent();
-
-		// Настраиваем live-обновление с интеллектуальным интервалом
-		if (live) {
-			const now = Date.now();
-			const diff = now - timestamp;
-			let interval = 60000; // По умолчанию обновляем каждую минуту
-
-			// Оптимизация: реже обновляем для старых дат
-			if (diff < 60000) { // Менее 1 минуты - обновляем каждую секунду
-				interval = 1000;
-			} else if (diff < 3600000) { // Менее 1 часа - каждые 10 секунд
-				interval = 10000;
-			}
-
-			this._intervalId = setInterval(() => {
-				updateContent();
-			}, interval);
-		}
-	}
-
-	/**
-	 * Обновляет элемент в режиме абсолютного времени
-	 * @param {boolean} live - нужно ли live-обновление
-	 * @param {string} locale - локаль для форматирования
-	 */
-	updateFormattedTime(live, locale) {
-		const date = new Date(this.getAttribute('datetime') || Date.now());
+	updateFormattedTime() {
+		const date = new Date(this.datetime);
 
 		// Опции форматирования на основе атрибутов элемента
 		const options = {
-			year: this.getAttribute('year') || undefined,
-			month: this.getAttribute('month') || undefined,
-			day: this.getAttribute('day') || undefined,
-			hour: this.getAttribute('hour') || undefined,
-			minute: this.getAttribute('minute') || undefined,
-			second: this.getAttribute('second') || undefined,
-			timeZoneName: this.getAttribute('time-zone-name') || undefined,
+			year: this.year,
+			month: this.month,
+			day: this.day,
+			hour: this.hour,
+			minute: this.minute,
+			second: this.second,
+			weekday: this.weekday,
+			timeZone: this.timeZone,
 		};
 
-		const updateContent = () => {
-			this.textContent = new Intl.DateTimeFormat(locale, options).format(date);
-		};
-
-		updateContent();
-
-		// Live-обновление для абсолютного времени
-		if (live) {
-			this._intervalId = setInterval(() => {
-				this.setAttribute('datetime', new Date());
-			}, 1000); // Обновляем каждую секунду
-		}
+		return new Intl.DateTimeFormat(this.locale, options).format(date);
 	}
 
-	/**
-	 * Список атрибутов, которые нужно отслеживать на изменения
-	 */
-	static get observedAttributes() {
-		return [
-			'datetime',
-			'last-time',
-			'year',
-			'month',
-			'day',
-			'hour',
-			'minute',
-			'second',
-		];
-	}
-
-	/**
-	 * Вызывается при изменении отслеживаемых атрибутов
-	 */
-	attributeChangedCallback(name, oldValue, newValue) {
-		if (oldValue !== newValue) {
-			// Для временных атрибутов включаем throttle
-			const throttle = name === 'datetime' || name === 'last-time';
-			this.render(throttle);
-		}
-	}
-
-	/**
-	 * Форматирует временной промежуток в относительное время (например, "5 минут назад")
-	 * @param {number} timestamp - временная метка
-	 * @param {string} style - стиль отображения ('long' или 'short')
-	 * @param {string} locale - локаль для форматирования
-	 * @returns {string} Отформатированная строка времени
-	 */
-	getTimePassed(timestamp, style = 'long', locale = navigator.language) {
+	updateRelativeTime() {
+		const timestamp = parseInt(this.lasttime, 10);
 		const now = Date.now();
 		const diff = now - timestamp;
 
@@ -222,17 +191,148 @@ class TimeFormatted extends HTMLElement {
 
 		try {
 			// Используем Intl API для красивого форматирования
-			const rtf = new Intl.RelativeTimeFormat(locale, {
-				numeric: 'auto', // "1 день назад" вместо "1 день назад"
-				style: style // 'long' или 'short'
+			const rtf = new Intl.RelativeTimeFormat(this.locale, {
+				numeric: this.numeric,
+				style: this.styleTime
 			});
 			return rtf.format(-value, unit);
 		} catch (e) {
-			console.error('Error formatting relative time:', e);
-			return ''; // Возвращаем пустую строку при ошибках
+			console.error('Ошибка при форматировании относительного времени:', e);
+			return '';
 		}
 	}
+
+	// Функция, которую будем выполнять по таймеру
+	delayedAction() {
+		this.datetime = Date.now(); // обновляем дату
+	}
+
+	// Запуск отложенного действия
+	scheduleAction(delayMs = 60000) {
+		// Настраиваем обновление с интеллектуальным интервалом
+		if (this.lasttime) {
+			const now = Date.now();
+			const diff = now - this.lasttime;
+			// Реже обновляем для старых дат
+			if (diff < 60000) { // Менее 1 минуты - обновляем каждую секунду
+				delayMs = 1000;
+			} else if (diff < 600000) { // Менее 10 минут - каждые 10 секунд
+				delayMs = 10000;
+			} else if (diff < 3600000) { // Менее 1 часа - каждые 60 секунд
+				delayMs = 60000;
+			}
+		} else {
+			if (this.second) {
+				delayMs = 1000; // 1 секунда
+			} else if (this.minute) {
+				delayMs = 5000; // 5 секунд
+			} else if (this.hour) {
+				delayMs = 60000; // 60 секунд
+			} else if (this.day) {
+				delayMs = 300000; // 5 минут
+			} else if (this.month) {
+				delayMs = 1800000; // 30 минут
+			}
+		}
+
+		// Сначала отменяем предыдущий, если был
+		this.clearScheduledAction();
+
+		this.timeoutId = setTimeout(() => {
+			this.delayedAction();
+			this.timeoutId = null; // сбросить после выполнения
+		}, delayMs);
+	}
+
+	// Отмена запланированного действия
+	clearScheduledAction() {
+		if (this.timeoutId !== null) {
+			clearTimeout(this.timeoutId);
+			this.timeoutId = null;
+		}
+	}
+
+	toDate(value) {
+		let date;
+
+		if (value instanceof Date) {
+			date = value;
+		} else if (typeof value === 'number') {
+			date = new Date(value);
+		} else if (typeof value === 'string') {
+			// Сначала пробуем интерпретировать как timestamp (число в строке)
+			const num = Number(value);
+			if (!isNaN(num)) {
+				date = new Date(num);
+			} else {
+				// Иначе — как строку даты (ISO, RFC и т.п.)
+				date = new Date(value);
+			}
+		} else {
+			// Неподдерживаемый тип: null, undefined, object, boolean и т.д.
+			return '';
+		}
+
+		// Проверяем, что дата валидна
+		if (isNaN(date.getTime())) {
+			return '';
+		}
+
+		return date;
+	}
+
+	/**
+	 * Преобразует значение в timestamp (мс с Unix Epoch).
+	 * Поддерживает: Date, number, string (ISO-дата или строка с числом).
+	 * @param {*} value — входное значение
+	 * @returns {number | ''} — timestamp или пустая строка при ошибке
+	 */
+	toTimestamp(value) {
+		let date;
+
+		if (value instanceof Date) {
+			date = value;
+		} else if (typeof value === 'number') {
+			// Уже timestamp — проверим, что это валидное число
+			if (isNaN(value) || !isFinite(value)) {
+				return '';
+			}
+			date = new Date(value);
+		} else if (typeof value === 'string') {
+			// Попытка интерпретировать как число (timestamp в строке)
+			const num = Number(value);
+			if (!isNaN(num) && isFinite(num)) {
+				date = new Date(num);
+			} else {
+				// Иначе — как строку даты
+				date = new Date(value);
+			}
+		} else {
+			// null, undefined, boolean, object и т.д.
+			return '';
+		}
+
+		// Проверка валидности даты
+		const time = date.getTime();
+		if (isNaN(time)) {
+			return '';
+		}
+
+		return time; // возвращает число (timestamp в мс)
+	}
+
+	connectedCallback() {
+		super.connectedCallback();
+		// При добавлении в DOM
+
+	}
+
+	disconnectedCallback() {
+		super.disconnectedCallback();
+
+		this.clearScheduledAction();
+	}
+
 }
 
-// Регистрируем кастомный элемент
-customElements.define("time-formatted", TimeFormatted);
+customElements.define('time-formatted', TimeFormatted);
