@@ -368,7 +368,7 @@ bui-gauge-circle2 {
 	background-position: 1px -1px;
 }
 
-/* Кнопка с анимацией вращения */
+/* Кнопка с анимацией масштабирования */
 .switch-button-scale {
 	/* Отключает outline */
 	outline: none;

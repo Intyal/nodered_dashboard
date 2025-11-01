@@ -4,10 +4,12 @@ import { BUIBaseWidget } from '../js/bui-base-widget.js';
 export class BuiClick extends BUIBaseWidget {
 	static defaults = {
 		target: '',
-		action: 'message',
+		action: 'none',
+		actionLong: 'none',
 		data: '',
 		params: '{}',
 		actionClass: '',
+		duration: 500,
 	};
 
 	static properties = {
@@ -15,7 +17,7 @@ export class BuiClick extends BUIBaseWidget {
 		target: {
 			type: String
 		},
-		// Тип реакции: 'message', 'page', 'state', 'custom'
+		// Тип реакции на короткое нажатие
 		action: {
 			type: String
 		},
@@ -32,6 +34,11 @@ export class BuiClick extends BUIBaseWidget {
 			attribute: 'action-class',
 			type: String,
 		},
+		// Тип реакции на долгое нажатие
+		actionLong: {
+			attribute: 'action-long',
+			type: String
+		},
 	};
 
 	static styles = css`
@@ -42,11 +49,21 @@ export class BuiClick extends BUIBaseWidget {
 
 	constructor() {
 		super();
-		
+
 		Object.assign(this, this.defaults);
 
-		this._boundHandler = null;
 		this._targetElement = null;
+		this._pressTimer = null;
+		this._isLongPress = false;
+		this._activePointerId = null;
+		this._startX = 0;
+		this._startY = 0;
+
+		this._boundPointerDown = this._handlePointerDown.bind(this);
+
+		this._boundGlobalPointerUp = this._handleGlobalPointerUp.bind(this);
+		this._boundGlobalPointerCancel = this._handleGlobalPointerCancel.bind(this);
+		this._boundGlobalPointerMove = this._handleGlobalPointerMove.bind(this);
 	}
 
 	render() {
@@ -65,9 +82,9 @@ export class BuiClick extends BUIBaseWidget {
 
 	updated(changedProperties) {
 		super.updated(changedProperties);
-		
-		if (changedProperties.has('target') || 
-			changedProperties.has('action') || 
+
+		if (changedProperties.has('target') ||
+			changedProperties.has('action') ||
 			changedProperties.has('data')) {
 			this._unbindEventHandler();
 			this._bindEventHandler();
@@ -79,36 +96,111 @@ export class BuiClick extends BUIBaseWidget {
 
 		this._targetElement = document.getElementById(this.target);
 		if (!this._targetElement) {
-			console.warn(`BuiClick: Целевой элемент с идентификатором "${this.target}" не найден`);
+			console.warn(`BuiClick: Элемент "${this.target}" не найден`);
 			return;
 		}
 
-		this._boundHandler = this._handleEvent.bind(this);
-		this._targetElement.addEventListener('click', this._boundHandler);
-		// Добавляем, если уканан, CSS класс к целевому элементу
+		this._targetElement.addEventListener('pointerdown', this._boundPointerDown, { passive: false });
+
 		if (this.actionClass) {
-			const classes = this.actionClass.split(" ");
-			classes.forEach(className => {
-				if (!this._targetElement.classList.contains(className)) {
-					this._targetElement.classList.add(className);
-				}
-			});
+			this.actionClass.split(" ").forEach(cls => this._targetElement.classList.add(cls));
 		}
 	}
 
 	_unbindEventHandler() {
-		if (this._targetElement && this._boundHandler) {
-			this._targetElement.removeEventListener('click', this._boundHandler);
-			this._boundHandler = null;
+		// Отменяем всё, что может быть активно
+		this._cancelPress();
+		this._activePointerId = null;
+
+		if (this._targetElement) {
+			this._targetElement.removeEventListener('pointerdown', this._boundPointerDown);
 			this._targetElement = null;
+		}
+
+		// На всякий случай убираем глобальные слушатели (хотя {once} должен был их убрать)
+		window.removeEventListener('pointermove', this._boundGlobalPointerMove);
+	}
+
+	_handlePointerDown(event) {
+		if (event.button !== undefined && event.button !== 0) return;
+		event.preventDefault();
+
+		// Защита: если уже активно нажатие — игнорируем
+		//if (this._activePointerId !== null) return;
+
+		this._startX = event.clientX;
+		this._startY = event.clientY;
+		this._isLongPress = false;
+
+		// Запоминаем ID указателя (для мультитача)
+		this._activePointerId = event.pointerId;
+
+		this._pressTimer = setTimeout(() => {
+			this._isLongPress = true;
+			this.onLongPress(event);
+		}, this.duration);
+
+		// Вешаем pointerup и pointermove на window, чтобы ловить отпускание везде
+		window.addEventListener('pointerup', this._boundGlobalPointerUp, { once: true });
+		window.addEventListener('pointercancel', this._boundGlobalPointerCancel, { once: true });
+		window.addEventListener('pointermove', this._boundGlobalPointerMove, { passive: false });
+	}
+
+	_handleGlobalPointerMove(event) {
+		// Игнорируем события от других указателей (при мультитаче)
+		if (event.pointerId !== this._activePointerId) return;
+
+		if (this._isLongPress) return;
+
+		const MOVE_THRESHOLD = 10;
+		const dx = Math.abs(event.clientX - this._startX);
+		const dy = Math.abs(event.clientY - this._startY);
+
+		if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
+			this._cancelPress();
 		}
 	}
 
-	_handleEvent() {
+	_handleGlobalPointerUp(event) {
+		// Убираем move-слушатель (он не {once})
+		window.removeEventListener('pointermove', this._boundGlobalPointerMove);
+
+		// Игнорируем другие указатели
+		if (event.pointerId !== this._activePointerId) return;
+
+		if (!this._isLongPress) {
+			this._cancelPress(); // очищаем таймер
+			this.onShortPress(event);
+		}
+	}
+
+	_handleGlobalPointerCancel(event) {
+		window.removeEventListener('pointermove', this._boundGlobalPointerMove);
+		if (event.pointerId === this._activePointerId) {
+			this._cancelPress();
+		}
+	}
+
+	_cancelPress() {
+		if (this._pressTimer) {
+			clearTimeout(this._pressTimer);
+			this._pressTimer = null;
+		}
+		this._isLongPress = true; // блокируем последующие вызовы
+	}
+
+	onShortPress(event) {
+		//console.log('Событие:', event);
+		//console.log('Тип указателя:', event.pointerType); // 'mouse', 'touch', 'pen'
+		//console.log('Координаты:', event.clientX, event.clientY);
+
 		try {
 			const params = JSON.parse(this.params || '{}');
-			
+
 			switch (this.action) {
+				case 'none':
+					console.log(`Нет действия`);
+					break;
 				case 'topic-set':
 					this._changeTopic(this.data, params);
 					break;
@@ -125,7 +217,25 @@ export class BuiClick extends BUIBaseWidget {
 					this._executeCustomAction(this.data, params);
 					break;
 				default:
-					console.warn(`BuiClick: Unknown action type "${this.action}"`);
+					console.warn(`BuiClick: Не известный тип действия "${this.action}"`);
+			}
+		} catch (error) {
+			console.error('BuiClick: Ошибка при разборе параметров JSON:', error);
+		}
+	}
+
+	onLongPress(event) {
+		console.log(`Долгое нажатие на элементе ${this.target}`, event);
+		
+		try {
+			//const params = JSON.parse(this.params || '{}');
+
+			switch (this.actionLong) {
+				case 'none':
+					console.log(`Нет действия`);
+					break;
+				default:
+					console.warn(`BuiClick: Не известный тип действия "${this.actionLong}"`);
 			}
 		} catch (error) {
 			console.error('BuiClick: Ошибка при разборе параметров JSON:', error);
@@ -144,14 +254,14 @@ export class BuiClick extends BUIBaseWidget {
 			bubbles: true,
 			composed: true
 		});
-		
+
 		//console.log(`BuiClick: Передать значение "${value}" в свойство ${params.property} топика "${params.topic} ".`, params);
 		this.dispatchEvent(event);
 	}
 
 	_sendMessage(message, params) {
 		if (!message) return;
-		
+
 		// Отправляем кастомное событие с сообщением
 		const event = new CustomEvent('bui-message', {
 			detail: {
@@ -162,7 +272,7 @@ export class BuiClick extends BUIBaseWidget {
 			bubbles: true,
 			composed: true
 		});
-		
+
 		//console.log(`BuiClick: Message sent - "${message}"`, params);
 		this.dispatchEvent(event);
 	}
@@ -180,7 +290,7 @@ export class BuiClick extends BUIBaseWidget {
 			bubbles: true,
 			composed: true
 		});
-		
+
 		//console.log(`BuiClick: Выбор страницы`, pageName, params, this.target);
 		this.dispatchEvent(event);
 	}
@@ -200,7 +310,7 @@ export class BuiClick extends BUIBaseWidget {
 			bubbles: true,
 			composed: true
 		});
-		
+
 		this.dispatchEvent(event);
 		//console.log(`BuiClick: State "${stateName}" toggled`, params);
 	}
@@ -218,7 +328,7 @@ export class BuiClick extends BUIBaseWidget {
 			bubbles: true,
 			composed: true
 		});
-		
+
 		this.dispatchEvent(event);
 		//console.log(`BuiClick: Custom action "${actionName}" executed`, params);
 	}

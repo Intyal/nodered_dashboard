@@ -7,7 +7,8 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		position: [0, 0],
 		minmax: [0, 100],
 		value: 0,
-		fixed: 0,
+		valueToDisplay : undefined,
+		//fixed: 0,
 		units: '',
 		gaugeStyle: 'arc',
 		sectors: [[0, 50, "var(--color-red-200)"], [50, 100, "var(--color-lime-500)"]],
@@ -30,15 +31,20 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 				return value.split(' ').map(Number);
 			}
 		},
-		// Число для отображения.
+		// Значение.
 		value: {
 			type: Number
 		},
-		// Количество знаков после запятой при отображении.
-		fixed: {
-			attribute: 'fraction-digits',
+		// Значение для отображения.
+		valueToDisplay: {
+			attribute: 'display-value',
 			type: Number
 		},
+		// Количество знаков после запятой при отображении.
+		// fixed: {
+		// 	attribute: 'fraction-digits',
+		// 	type: Number
+		// },
 		// Единицы измерения
 		units: {
 			type: String
@@ -135,7 +141,8 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		// Вычисление значений для отрисовки шкалы
 		this._gauge = {
 			// #gaugeCalculate()
-			fixedValue: null, // Значение, которое будет отображено.
+			//fixedValue: null, // Значение, которое будет отображено.
+			valueToDisplay: null,
 			halfWidth: null,	// Половина ширины поля
 			radiusPin: null,
 			pointsClockHand: null, // Стрелка
@@ -204,7 +211,8 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 	}
 
 	#gaugeCalculate() {
-		this._gauge.fixedValue = this.fixed ? this.value.toFixed(this.fixed) : this.value;
+		//this._gauge.fixedValue = this.fixed ? this.value.toFixed(this.fixed) : this.value;
+		this._gauge.valueToDisplay = this.valueToDisplay ? this.valueToDisplay : this.value;
 
 		this._gauge.halfWidth = this.viewBoxWidth / 2;	// Половина ширины поля
 		this._gauge.radiusPin = this.sectorWidth / 4 + 2;
@@ -314,7 +322,7 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 
 	willUpdate(changedProperties) {
 		// Метод .every() (для "все"), .some() (для "хотя бы один"):
-		if (['value', 'fraction-digits'].some(key => changedProperties.has(key))) {
+		if (['value', 'valueToDisplay'].some(key => changedProperties.has(key))) {
 			this.#gaugeCalculate();
 			this.#gaugeValueUpdate();
 		}
@@ -397,7 +405,7 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 			${this.visibleValueOff ? `` : svg`
 			<g fill="var(--colorValue)">
 				<text id="digit-value" x="${this._gauge.valuePosition[0]}" y="${this._gauge.valuePosition[1]}" dx="${this._gauge.valuePosition[2]}" dy="${this._gauge.valuePosition[3]}" text-anchor="middle" class="value">
-					${this._gauge.fixedValue}
+					${this._gauge.valueToDisplay}
 				</text>
 				<text x="${this._gauge.unitsPosition[0]}" y="${this._gauge.unitsPosition[1]}" dx="${this._gauge.unitsPosition[2]}" dy="${this._gauge.unitsPosition[3]}" text-anchor="middle" class="units">
 					${this.units}
