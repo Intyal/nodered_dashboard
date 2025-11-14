@@ -60,19 +60,29 @@ uibuilder.onChange('msg', (msg) => {
 	console.log('Incoming msg: ', msg);
 })
 
-// Другой компонент ловит событие
-document.addEventListener('bui-message', (event) => {
+//
+document.addEventListener('index:message', (event) => {
 	if (event.detail.message === 'user-login') {
 		console.log('Пользователь вошел:', event.detail.params.userId);
 		// Обновляем интерфейс, показываем приветствие и т.д.
 	}
 });
 
-document.addEventListener('bui-topic-set', (event) => {
+// Отправка сообщения в Node-RED для установки знрачения в mqtt
+document.addEventListener('index:topic-set', (event) => {
 	console.log(`Отправить '${event.detail.value}' в топик ${event.detail.params.topic} для свойства ${event.detail.params.property}`);
 	uibuilder.send({
 		uibuilderCtrl: "mqtt topic set",
 		payload: event.detail,
+	});
+});
+
+//
+document.addEventListener('index:request-page', (event) => {
+	console.log(`Запрос страницы ${event.detail.page}`);
+	uibuilder.send({
+		uibuilderCtrl: "request page",
+		page: event.detail.page,
 	});
 });
 

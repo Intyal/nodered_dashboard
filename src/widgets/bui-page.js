@@ -8,6 +8,9 @@ export class BUIPage extends BUIBaseWidget {
 	};
 	
 	static properties = {
+		label: {
+			type: String,
+		},
 		// Количество ячейки на странице по горизонтали. Отражается в CSS-переменной `--number-cells`.
 		numberOfCells: {
 			attribute: 'number-cells',
@@ -108,29 +111,39 @@ export class BUIPage extends BUIBaseWidget {
 		
 		// Скрыть/показать страницу
 		if (this.slot === 'pages') {
-			this.handleTopicSet = event => { // сохраняем обработчик как свойство класса
-				if (event.detail.page === this.id) {
-					//console.log(event.detail, this.id);
+			this.handlePageSelect = event => { // сохраняем обработчик как свойство класса
+				// Если указана страница, то показываем ее, при совпадении id
+				if (event.detail.page === this.id || event.detail.page === this.label) {
 					if (!this.active) {
 						this.active = true;
-						this.activeLabels(this.id);
-						
-						// Записываем выбранную страницу в localStorage
-						window.localStorage.setItem(`${window.location.pathname}selectedPage`, this.id);
+						// Сохранять открытую страницу как выбранную
+						if (this.isPersistent) {
+							// Выделяем закладку выбранной страницы
+							this.activeLabels(this.id);
+							// Записываем выбранную страницу в localStorage
+							window.localStorage.setItem(`${window.location.pathname}selectedPage`, this.id);
+						}
 					}
 				} else {
 					this.active = false;
+					if (!this.isPersistent) {
+						this.remove();
+					}
+				}
+				// Если не указана страница, то показываем последнию сохраненную в локальном кэше, или первую
+				if (!event.detail.page) {
+					this.firstUpdated();
 				}
 			};
 			
-			document.addEventListener('bui-select-page', this.handleTopicSet);
+			document.addEventListener('bui-page:select', this.handlePageSelect);
 		}
 	}
 	
 	disconnectedCallback() {
 		if (this.slot === 'pages') {
-			document.removeEventListener('bui-select-page', this.handleTopicSet);
-			delete this.handleTopicSet;
+			document.removeEventListener('bui-page:select', this.handlePageSelect);
+			delete this.handlePageSelect;
 		}
 		
 		super.disconnectedCallback();

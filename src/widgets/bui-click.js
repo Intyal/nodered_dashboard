@@ -4,6 +4,7 @@ import { BUIBaseWidget } from '../js/bui-base-widget.js';
 export class BuiClick extends BUIBaseWidget {
 	static defaults = {
 		target: '',
+		event: '',
 		action: 'none',
 		actionLong: 'none',
 		data: '',
@@ -15,19 +16,22 @@ export class BuiClick extends BUIBaseWidget {
 	static properties = {
 		// ID целевого элемента для привязки события
 		target: {
-			type: String
+			type: String,
+		},
+		event: {
+			type: String,
 		},
 		// Тип реакции на короткое нажатие
 		action: {
-			type: String
+			type: String,
 		},
 		// Данные для разных типов действий
 		data: {
-			type: String
+			type: String,
 		},
 		// Дополнительные параметры в формате JSON
 		params: {
-			type: String
+			type: String,
 		},
 		// CSS класс для целевого элемента
 		actionClass: {
@@ -37,7 +41,17 @@ export class BuiClick extends BUIBaseWidget {
 		// Тип реакции на долгое нажатие
 		actionLong: {
 			attribute: 'action-long',
-			type: String
+			type: String,
+		},
+		// Данные для разных типов действий
+		dataLong: {
+			attribute: 'data-long',
+			type: String,
+		},
+		// Дополнительные параметры в формате JSON
+		paramsLong: {
+			attribute: 'params-long',
+			type: String,
 		},
 	};
 
@@ -193,49 +207,46 @@ export class BuiClick extends BUIBaseWidget {
 		//console.log('Событие:', event);
 		//console.log('Тип указателя:', event.pointerType); // 'mouse', 'touch', 'pen'
 		//console.log('Координаты:', event.clientX, event.clientY);
-
-		try {
-			const params = JSON.parse(this.params || '{}');
-
-			switch (this.action) {
-				case 'none':
-					console.log(`Нет действия`);
-					break;
-				case 'topic-set':
-					this._changeTopic(this.data, params);
-					break;
-				case 'message':
-					this._sendMessage(this.data, params);
-					break;
-				case 'select-page':
-					this._selectPage(this.data, params);
-					break;
-				case 'state':
-					this._toggleState(this.data, params);
-					break;
-				case 'custom':
-					this._executeCustomAction(this.data, params);
-					break;
-				default:
-					console.warn(`BuiClick: Не известный тип действия "${this.action}"`);
-			}
-		} catch (error) {
-			console.error('BuiClick: Ошибка при разборе параметров JSON:', error);
+		if (this.event === 'shortPress') {
+			this._switchAction(event, this.action, this.data, JSON.parse(this.params || '{}'));
 		}
 	}
 
 	onLongPress(event) {
-		console.log(`Долгое нажатие на элементе ${this.target}`, event);
-		
+		//console.log(`Долгое нажатие на элементе ${this.target}`, event);
+		if (this.event === 'longPress') {
+			this._switchAction(event, this.action, this.data, JSON.parse(this.params || '{}'));
+		}
+	}
+
+	_switchAction(event, action, data, params) {
 		try {
 			//const params = JSON.parse(this.params || '{}');
 
-			switch (this.actionLong) {
+			switch (action) {
 				case 'none':
 					console.log(`Нет действия`);
 					break;
+				case 'topic-set':
+					this._changeTopic(data, params);
+					break;
+				case 'message':
+					this._sendMessage(data, params);
+					break;
+				case 'open-page':
+					this._openPage(data, params);
+					break;
+				case 'close-active-page':
+					this._closePage(null, params);
+					break;
+				case 'state':
+					this._toggleState(data, params);
+					break;
+				case 'custom':
+					this._executeCustomAction(data, params);
+					break;
 				default:
-					console.warn(`BuiClick: Не известный тип действия "${this.actionLong}"`);
+					console.warn(`BuiClick: Не известный тип действия "${action}"`);
 			}
 		} catch (error) {
 			console.error('BuiClick: Ошибка при разборе параметров JSON:', error);
@@ -245,7 +256,7 @@ export class BuiClick extends BUIBaseWidget {
 	_changeTopic(value, params) {
 		if (!value) return;
 
-		const event = new CustomEvent('bui-topic-set', {
+		const event = new CustomEvent('index:topic-set', {
 			detail: {
 				value: value,
 				params: params,
@@ -263,7 +274,7 @@ export class BuiClick extends BUIBaseWidget {
 		if (!message) return;
 
 		// Отправляем кастомное событие с сообщением
-		const event = new CustomEvent('bui-message', {
+		const event = new CustomEvent('index:message', {
 			detail: {
 				message: message,
 				params: params,
@@ -277,15 +288,34 @@ export class BuiClick extends BUIBaseWidget {
 		this.dispatchEvent(event);
 	}
 
-	// Обработка события смены страницы
-	_selectPage(pageName, params) {
+	// Смена страницы
+	_openPage(pageName, params) {
 		if (!pageName) return;
 
 		// Отправляем событие смены страницы
-		const event = new CustomEvent('bui-select-page', {
+		const event = new CustomEvent('bui-book:open-page', {
 			detail: {
 				page: pageName,
-				params: params
+				//saveSelected: true,
+				params: params,
+			},
+			bubbles: true,
+			composed: true
+		});
+
+		//console.log(`BuiClick: Выбор страницы`, pageName, params, this.target);
+		this.dispatchEvent(event);
+	}
+
+	// 
+	_closePage(pageName = null, params) {
+
+		// Отправляем событие смены страницы
+		const event = new CustomEvent('bui-page:select', {
+			detail: {
+				page: pageName,
+				//saveSelected: false,
+				params: params,
 			},
 			bubbles: true,
 			composed: true
@@ -300,7 +330,7 @@ export class BuiClick extends BUIBaseWidget {
 
 		// Переключаем состояние через кастомное событие
 		// params='{"topic": "zigbee2mqtt/light_switch_hall", "property": "state", "states": "[ON, OFF]", "current": "OFF"}'
-		const event = new CustomEvent('bui-click-toggle', {
+		const event = new CustomEvent('index:topic-toggle', {
 			detail: {
 				state: stateName,
 				value: params.value,
@@ -319,7 +349,7 @@ export class BuiClick extends BUIBaseWidget {
 		if (!actionName) return;
 
 		// Выполняем кастомное действие
-		const event = new CustomEvent('bui-custom-action', {
+		const event = new CustomEvent('index:custom-action', {
 			detail: {
 				action: actionName,
 				params: params,
