@@ -46,7 +46,7 @@
 				<bui-gauge-circle2 size="4 4" gauge-style="half" value="10" units="%"></bui-gauge-circle2>
 			</bui-sticker>
 			<bui-sticker size="4 4" id="st3">
-				<bui-gauge-circle2 size="4 4" gauge-style="full" value="80" units="%"></bui-gauge-circle2>
+				<bui-gauge-circle2 size="4 4" gauge-style="full" value="180" units="%"></bui-gauge-circle2>
 			</bui-sticker>
 			<bui-sticker size="8 8" inner-size="16 16" id="st4">
 				<bui-led size="1 1" scale="80 45" style="--color: var(--color-cyan-700)" options="horizontal" id="led1"></bui-led>
@@ -63,6 +63,7 @@
 					action="select-page"
 					data="bui_066d3488273775fc">
 				</bui-click>
+				<div id="log" style="font-size: 6em;">123</div>
 			</bui-sticker>
 			<bui-sticker size="6 2" id="st5">
 				<bui-string size="6 1" style="--font-size: 3em;" id="s1">
@@ -78,6 +79,24 @@
 			<bui-sticker size="2 2" id="st7">
 				<bui-icon size="2 2" name="stars" style="--font-size: 3em;" id="i1"></bui-icon>
 			</bui-sticker>
+			<bui-sticker size="10 1" id="st8">
+				<bui-range size="3 1" min="0" max="100" value="50"></bui-range>
+			</bui-sticker>
+			<bui-sticker size="10 10" id="st8">
+				<bui-range2 size="10 10" value="50" id="r3" gauge-style="arc" visible-value-off></bui-range2>
+			</bui-sticker>
+			<!-- <bui-sticker size="20 10" id="st8">
+
+				<bui-range size="20 5"
+				mode="single"
+				min="0" max="100" value="50"
+				></bui-range>
+
+				<bui-range size="20 5"
+				mode="dual"
+				min="0" max="10" min-val="2" max-val="8"
+				></bui-range>
+			</bui-sticker> -->
 		</bui-page>
 	</bui-book>
 </body>

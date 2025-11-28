@@ -7,3 +7,5 @@ import "./bui-icon.js";
 import "./bui-click.js";
 import "./bui-gauge-circle2.js";
 import "./time-formatted.js";
+import "./bui-range.js";
+import "./bui-range2.js";

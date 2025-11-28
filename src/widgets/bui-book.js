@@ -56,7 +56,8 @@ export class BUIBook extends BUIBaseWidget {
 		this.handleOpenPage = eventIn => { // сохраняем обработчик как свойство класса
 			// Ищем нужную страницу
 			if (eventIn.detail.page) {
-				const page = this.querySelector(`#${eventIn.detail.page}`) || this.querySelector(`bui-page[label="${eventIn.detail.page}"]`);
+				console.log(`Открываем страницу ${eventIn.detail.page}`)
+				const page = this.querySelector(`bui-page#${eventIn.detail.page}`) || this.querySelector(`bui-page[label="${eventIn.detail.page}"]`);
 				// Если страница найдена, отправяем ей сообщение
 				if (page) {
 					const eventOut = new CustomEvent('bui-page:select', {
@@ -68,7 +69,7 @@ export class BUIBook extends BUIBaseWidget {
 						composed: true
 					});
 					this.dispatchEvent(eventOut);
-					// Если страница не найдена, отправляем в NodeRed запрос страницы
+				// Если страница не найдена, отправляем в NodeRed запрос страницы
 				} else {
 					//console.log('reassembly');
 					const eventOut = new CustomEvent('index:request-page', {
@@ -80,23 +81,12 @@ export class BUIBook extends BUIBaseWidget {
 						composed: true
 					});
 					this.dispatchEvent(eventOut);
-					//
-					// const waitForElement = () => {
-					// 	const page = this.querySelector(`#${eventIn.detail.page}`) || this.querySelector(`bui-page[label="${eventIn.detail.page}"]`);
-					// 	if (page) {
-					// 		console.log(`Страница "${eventIn.detail.page}" найдена в DOM`);
-					// 		// Выполнить нужные действия
-					// 		return;
-					// 	}
-					// 	requestAnimationFrame(waitForElement); // Повторить проверку на следующем кадре
-					// };
-					// waitForElement();
 
 					const abortController = new AbortController();
 					// Ждём элемент
 					this.waitForElement(eventIn.detail.page, 5000, abortController.signal)
 						.then(element => {
-							//console.log('Страница найдена:', element);
+							console.log('Страница получена:', eventIn.detail.page);
 							const event = new CustomEvent('bui-page:select', {
 								detail: {
 									page: eventIn.detail.page,
@@ -110,11 +100,6 @@ export class BUIBook extends BUIBaseWidget {
 						.catch(error => {
 							console.error(error.message);
 						});
-
-					// Отменить ожидание через 2 секунды
-					// setTimeout(() => {
-					// 	abortController.abort();
-					// }, 2000);
 				}
 			}
 		};

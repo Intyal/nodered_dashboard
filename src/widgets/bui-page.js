@@ -5,6 +5,7 @@ export class BUIPage extends BUIBaseWidget {
 	static defaults = {
 		numberOfCells: 20,
 		innerSize: [20, 1],
+		tmp: false,
 	};
 	
 	static properties = {
@@ -23,6 +24,10 @@ export class BUIPage extends BUIBaseWidget {
 		active: {
 			type: Boolean,
 			reflect: true,
+		},
+		//
+		tmp: {
+			type: Boolean,
 		},
 	};
 
@@ -117,7 +122,7 @@ export class BUIPage extends BUIBaseWidget {
 					if (!this.active) {
 						this.active = true;
 						// Сохранять открытую страницу как выбранную
-						if (this.isPersistent) {
+						if (!this.tmp) {
 							// Выделяем закладку выбранной страницы
 							this.activeLabels(this.id);
 							// Записываем выбранную страницу в localStorage
@@ -126,7 +131,8 @@ export class BUIPage extends BUIBaseWidget {
 					}
 				} else {
 					this.active = false;
-					if (!this.isPersistent) {
+					if (this.tmp) {
+						console.log(`Удаляем страницу ${this.id}`)
 						this.remove();
 					}
 				}

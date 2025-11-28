@@ -1,7 +1,7 @@
 import { svg, css } from '../js/lit-all.min.js';
 import { BUIBaseWidget, mathUtilities } from '../js/bui-base-widget.js';
 
-class BuiGaugeCircle2 extends BUIBaseWidget {
+class BUIRange2 extends BUIBaseWidget {
 	static defaults = {
 		size: [2, 2],
 		position: [0, 0],
@@ -10,10 +10,13 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		valueToDisplay : undefined,
 		//fixed: 0,
 		units: '',
+		zeroOffset: 90,
 		gaugeStyle: 'arc',
 		sectors: [[0, 50, "var(--color-red-200)"], [50, 100, "var(--color-lime-500)"]],
 		visibleRangeOff: false,
 		visibleValueOff: false,
+		minValue: 0,
+		maxValue: 100,
 	};
 
 	static properties = {
@@ -61,6 +64,10 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		gaugeStyle: {
 			attribute: 'gauge-style',
 			type: String
+		},
+		zeroOffset: {
+			attribute: 'zero-offset',
+			type: Number,
 		},
 		// Цвета секторов: [[start, end, color], ...]
 		sectors: {
@@ -124,6 +131,16 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		.label-ranges {
 			font-size: 20px;
 		}
+		.no-select {
+			-webkit-touch-callout: none;   /* отключает всплывающее меню на iOS */
+			-webkit-user-select: none;     /* отключает выделение текста */
+			-moz-user-select: none;
+			-ms-user-select: none;
+			user-select: none;
+
+			/* Отключает системный "долгий тап → контекстное меню" */
+			touch-action: manipulation;
+		}
 	`;
 
 	constructor() {
@@ -138,13 +155,12 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		this.viewBoxWidth = 200;
 		this.viewBoxHeight = 200;
 
-		// Вычисление значений для отрисовки шкалы
+		// Значения для отрисовки шкалы
 		this._gauge = {
-			// #gaugeCalculate()
-			//fixedValue: null, // Значение, которое будет отображено.
 			valueToDisplay: null,
 			halfWidth: null,	// Половина ширины поля
-			radiusPin: null,
+			zeroOffsetRAD: null, // Смещение нуля в радианах
+			radiusPin: 20,
 			pointsClockHand: null, // Стрелка
 			// Деления
 			majorTicksRadius: null, // Радиус
@@ -165,6 +181,14 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 			// #gaugeValueUpdate()
 			angleValue: null,
 		};
+
+		// Привязка для pointer
+		this._boundGlobalPointerMove = this.#onGlobalPointerMove.bind(this);
+		this._boundGlobalPointerUp = this.#onGlobalPointerUp.bind(this);
+	  
+		// Привязка для touch
+		this._boundTouchMove = this.#onTouchMove.bind(this);
+		this._boundTouchEnd = this.#onTouchEnd.bind(this);
 
 		this.#gaugeCalculate();
 		this.#gaugeStyleUpdate();
@@ -199,9 +223,21 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		return this._position;
 	}
 
+	set minmax(value) {
+		this.minValue = value[0];
+		this.maxValue = value[1];
+		this._minmax = value;
+	}
+	get minmax() {
+		return this._minmax;
+	}
+
 	set value(value) {
 		if (isNaN(value)) {
 			console.warn(`[${this.constructor.name}][value] Новое значение не является числом`);
+			return;
+		}
+		if (value > this.maxValue || value < this.minValue) {
 			return;
 		}
 		this._value = value;
@@ -216,6 +252,8 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 
 		this._gauge.halfWidth = this.viewBoxWidth / 2;	// Половина ширины поля
 		this._gauge.radiusPin = this.sectorWidth / 4 + 2;
+
+		this._gauge.zeroOffsetRAD = (this.zeroOffset * Math.PI) / 180;
 
 		this._gauge.majorTicksRadius = this.viewBoxWidth / 2 - this.sectorWidth / 2;
 		this._gauge.majorTicksCircumference = 2 * Math.PI * this._gauge.majorTicksRadius;
@@ -249,6 +287,7 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		
 		this._gauge.pointStart = this._gauge.angle / 2; // Начало сектора
 		this._gauge.pointEnd = 360 - this._gauge.angle; // Конец сектора
+		console.log(this._gauge.pointStart, this._gauge.pointEnd);
 	}
 
 	#gaugeSectorUpdate() {
@@ -256,9 +295,6 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 			console.warn('sectors должен быть массивом');
 			return;
 		}
-
-		this.minValue = this.minmax[0];
-		this.maxValue = this.minmax[1];
 
 		let sectorIndex = 0;
 		let widthTicksStart = this.widthTicksLine;
@@ -347,15 +383,144 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		];
 	}
 
+	disconnectedCallback() {
+		super.disconnectedCallback();
+		
+		this.activePointerId = null;
+	}
+
+	firstUpdated() {
+		
+	}
+
 	updated(changedProperties) {
 		this.#gaugeAnimate();
+	}
+
+	#onPointerDown(event) {
+		event.preventDefault();
+
+		// Запоминаем ID
+		this.activePointerId = event.pointerId;
+
+		// ЗАХВАТЫВАЕМ указатель!
+		//this.thumb.setPointerCapture(event.pointerId);
+		//const target = event.currentTarget;
+		// if (typeof target.setPointerCapture === 'function') {
+		// 	target.setPointerCapture(event.pointerId);
+		// }
+		//this.thumb = target; // сохраняем актуальный элемент
+		//console.log(this.thumb);
+	  
+		// Вешаем ГЛОБАЛЬНЫЕ слушатели
+		window.addEventListener('pointermove', this._boundGlobalPointerMove, { passive: false });
+		window.addEventListener('pointerup', this._boundGlobalPointerUp, { once: true });
+		window.addEventListener('pointercancel', this._boundGlobalPointerUp, { once: true });
+
+		//
+		const circleRect = this.getBoundingClientRect();
+    	this.centerX = circleRect.left + this._gauge.halfWidth;
+    	this.centerY = circleRect.top + this._gauge.halfWidth;
+    	this.radius = this._gauge.majorTicksRadius;
+
+		document.getElementById('log').innerHTML = `down`;
+	}
+
+	#onGlobalPointerMove(event) {
+		if (event.pointerId !== this.activePointerId) return;
+		event.preventDefault();
+
+		const dx = event.clientX - this.centerX;
+		const dy = event.clientY - this.centerY;
+		// Стандартный угол от оси X (против ЧС)
+		let angleMath = Math.atan2(dy, dx);
+		// Преобразуем в угол по часовой стрелке от выбранного нуля
+		let relativeAngle = ((angleMath - this._gauge.zeroOffsetRAD) + (2 * Math.PI)) % (2 * Math.PI);
+		if (relativeAngle < 0) relativeAngle += 2 * Math.PI;
+
+		const angleDeg = (relativeAngle * 180) / Math.PI;
+
+		//console.log(Math.round(angleDeg) + '°');
+		document.getElementById('log').innerHTML = `${Math.round(angleDeg)} °`;
+
+		const anglDegNorm = mathUtilities.mapRange(angleDeg, 0, 360, this._gauge.pointStart, 360 - this._gauge.pointStart);
+		console.log(anglDegNorm);
+
+		this.$('#gthumb').style.transform = `rotate(${anglDegNorm}deg)`;
+		this.$('#gthumb').style.transformOrigin = `${this._gauge.halfWidth}px ${this._gauge.halfWidth}px`;
+	}
+
+	#onGlobalPointerUp(event) {
+		// Игнорируем другие указатели
+		if (event.pointerId !== this.activePointerId) return;
+		
+		// Освобождаем захват
+		//if (this.thumb?.releasePointerCapture) {
+			//this.thumb.releasePointerCapture(this.activePointerId);
+		//}
+		
+		// Убираем move-слушатель
+		window.removeEventListener('pointermove', this.#onGlobalPointerMove);
+		
+		this.activePointerId = null;
+		document.getElementById('log').innerHTML = `up`;
+	}
+
+	#onTouchStart(event) {
+		// Отключаем скролл и долгий тап
+		event.preventDefault();
+	  
+		// Берём первый тач
+		const touch = event.changedTouches[0];
+		this.activeTouchId = touch.identifier;
+		this.startX = touch.clientX;
+		this.startY = touch.clientY;
+	  
+		// Вешаем глобальные слушатели на window
+		window.addEventListener('touchmove', this._boundTouchMove, { passive: false });
+		window.addEventListener('touchend', this._boundTouchEnd, { once: true });
+		window.addEventListener('touchcancel', this._boundTouchEnd, { once: true });
+	  
+		document.getElementById('log').innerHTML = `touch down`;
+	}
+	  
+	#onTouchMove(event) {
+		event.preventDefault();
+
+		const touch = Array.from(event.changedTouches).find(t => t.identifier === this.activeTouchId);
+		if (!touch) return;
+
+		const dx = touch.clientX - this.centerX;
+		const dy = touch.clientY - this.centerY;
+		// Стандартный угол от оси X (против ЧС)
+		let angleMath = Math.atan2(dy, dx);
+		// Преобразуем в угол по часовой стрелке от выбранного нуля
+		let relativeAngle = ((angleMath - this._gauge.zeroOffsetRAD) + (2 * Math.PI)) % (2 * Math.PI);
+		if (relativeAngle < 0) relativeAngle += 2 * Math.PI;
+
+		const angleDeg = (relativeAngle * 180) / Math.PI;
+
+		//console.log(Math.round(angleDeg) + '°');
+		document.getElementById('log').innerHTML = `${Math.round(angleDeg)} °`;
+
+		this.$('#gthumb').style.transform = `rotate(${angleDeg}deg)`;
+		this.$('#gthumb').style.transformOrigin = `${this._gauge.halfWidth}px ${this._gauge.halfWidth}px`;
+	}
+
+	#onTouchEnd(event) {
+		const touch = Array.from(event.changedTouches).find(t => t.identifier === this.activeTouchId);
+		if (!touch) return;
+
+		window.removeEventListener('touchmove', this._boundTouchMove);
+		this.activeTouchId = null;
+		document.getElementById('log').innerHTML = `touch up`;
 	}
 
 	#templateGauge() {
 		return svg`
 		<svg viewBox="0 0 ${this.viewBoxWidth} ${this._gauge.heightViewBox}">
 			<!-- Цветные сектора -->
-			<g id="gauge-sections" fill="none" stroke-width="${this.sectorWidth}" transform="rotate(90 ${this._gauge.halfWidth} ${this._gauge.halfWidth})">
+			<g id="gauge-sections" fill="none" stroke-width="${this.sectorWidth}" transform="rotate(${this.zeroOffset} ${this._gauge.halfWidth} ${this._gauge.halfWidth})">
 				${this._gauge.sectors.map(
 					(item) => svg`
 						<circle
@@ -368,28 +533,44 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 					`
 				)}
 			</g>
-			<g id="gauge-scale" transform="rotate(90 ${this._gauge.halfWidth} ${this._gauge.halfWidth})">
-				<!-- Риски -->
-				
-				<!-- Стрелка -->
-				<polygon
-					id="hand"
-					points="${this._gauge.pointsClockHand}"
-					fill="var(--color-red-300)"
-					stroke-width="1"
-					stroke="var(--color-gray-800)"
-					stroke-opacity="0.3"
-					fill-opacity="0.8"
-				/>
-				<!-- Гвоздик -->
-				<circle
-					cx="${this._gauge.halfWidth}"
-					cy="${this._gauge.halfWidth}"
-					fill="var(--color-gray-800)"
-					r="${this._gauge.radiusPin}"
-					stroke-width="1" 
-					stroke="var(--color-gray-400)"
-				/>
+			<g id="gauge-scale" transform="rotate(${this.zeroOffset} ${this._gauge.halfWidth} ${this._gauge.halfWidth})">
+				<g id="gthumb">
+					<!-- Ручка -->
+					<circle
+						id="thumb"
+						cx="${this._gauge.halfWidth + this._gauge.majorTicksRadius}"
+						cy="${this._gauge.halfWidth}"
+						fill="var(--color-gray-800)"
+						r="${this._gauge.radiusPin}"
+						stroke-width="1" 
+						stroke="var(--color-gray-400)"
+						@pointerdown=${this.#onPointerDown}
+						@touchstart=${this.#onTouchStart}
+						@contextmenu=${(e) => e.preventDefault()}
+						@selectstart=${(e) => e.preventDefault()}
+					/>
+				</g>
+				<g>
+					<!-- Стрелка -->
+					<polygon
+						id="hand"
+						points="${this._gauge.pointsClockHand}"
+						fill="var(--color-red-300)"
+						stroke-width="1"
+						stroke="var(--color-gray-800)"
+						stroke-opacity="0.3"
+						fill-opacity="0.8"
+					/>
+					<!-- Гвоздик -->
+					<circle
+						cx="${this._gauge.halfWidth}"
+						cy="${this._gauge.halfWidth}"
+						fill="var(--color-gray-800)"
+						r="${this._gauge.radiusPin}"
+						stroke-width="1" 
+						stroke="var(--color-gray-400)"
+					/>
+				</g>
 				<!-- Маска выреза -->
 				<mask id="mask-gauge" fill="#fff">
 					<circle
@@ -427,4 +608,4 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 
 }
 
-customElements.define('bui-gauge-circle2', BuiGaugeCircle2);
+customElements.define('bui-range2', BUIRange2);
