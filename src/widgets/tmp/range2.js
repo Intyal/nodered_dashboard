@@ -156,7 +156,7 @@ class BUIRange2 extends BUIBaseWidget {
 		this.viewBoxHeight = 200;
 
 		// Значения для отрисовки шкалы
-		this._gauge = {
+		this.gauge = {
 			valueToDisplay: null,
 			halfWidth: null,	// Половина ширины поля
 			zeroOffsetRAD: null, // Смещение нуля в радианах
@@ -247,19 +247,19 @@ class BUIRange2 extends BUIBaseWidget {
 	}
 
 	#gaugeCalculate() {
-		//this._gauge.fixedValue = this.fixed ? this.value.toFixed(this.fixed) : this.value;
-		this._gauge.valueToDisplay = this.valueToDisplay ? this.valueToDisplay : this.value;
+		//this.gauge.fixedValue = this.fixed ? this.value.toFixed(this.fixed) : this.value;
+		this.gauge.valueToDisplay = this.valueToDisplay ? this.valueToDisplay : this.value;
 
-		this._gauge.halfWidth = this.viewBoxWidth / 2;	// Половина ширины поля
-		this._gauge.radiusPin = this.sectorWidth / 4 + 2;
+		this.gauge.halfWidth = this.viewBoxWidth / 2;	// Половина ширины поля
+		this.gauge.radiusPin = this.sectorWidth / 4 + 2;
 
-		this._gauge.zeroOffsetRAD = (this.zeroOffset * Math.PI) / 180;
+		this.gauge.zeroOffsetRAD = (this.zeroOffset * Math.PI) / 180;
 
-		this._gauge.majorTicksRadius = this.viewBoxWidth / 2 - this.sectorWidth / 2;
-		this._gauge.majorTicksCircumference = 2 * Math.PI * this._gauge.majorTicksRadius;
-		this._gauge.majorAngleToArc = mathUtilities.mapRange(1, 0, 360, 0, this._gauge.majorTicksCircumference);
+		this.gauge.majorTicksRadius = this.viewBoxWidth / 2 - this.sectorWidth / 2;
+		this.gauge.majorTicksCircumference = 2 * Math.PI * this.gauge.majorTicksRadius;
+		this.gauge.majorAngleToArc = mathUtilities.mapRange(1, 0, 360, 0, this.gauge.majorTicksCircumference);
 
-		this._gauge.pointsClockHand = `${this._gauge.halfWidth},${this._gauge.halfWidth + this.sectorWidth / 4} ${this.viewBoxWidth - this.sectorWidth / 2},${this._gauge.halfWidth} ${this._gauge.halfWidth},${this._gauge.halfWidth - this.sectorWidth / 4} ${this._gauge.halfWidth - this.sectorWidth / 2},${this._gauge.halfWidth - 3} ${this._gauge.halfWidth - this.sectorWidth / 2},${this._gauge.halfWidth + 3}`;
+		this.gauge.pointsClockHand = `${this.gauge.halfWidth},${this.gauge.halfWidth + this.sectorWidth / 4} ${this.viewBoxWidth - this.sectorWidth / 2},${this.gauge.halfWidth} ${this.gauge.halfWidth},${this.gauge.halfWidth - this.sectorWidth / 4} ${this.gauge.halfWidth - this.sectorWidth / 2},${this.gauge.halfWidth - 3} ${this.gauge.halfWidth - this.sectorWidth / 2},${this.gauge.halfWidth + 3}`;
 	}
 
 	#gaugeStyleUpdate() {
@@ -267,27 +267,27 @@ class BUIRange2 extends BUIBaseWidget {
             full: {
                 angle: 0,
                 heightViewBox: this.viewBoxHeight,
-                valuePosition: [this._gauge.halfWidth, this.sectorWidth + (this._gauge.halfWidth - this._gauge.radiusPin - this.sectorWidth) / 2, 0, 15], // 36 / 4 + 6 = 15
-                unitsPosition: [this._gauge.halfWidth, (this._gauge.halfWidth + this._gauge.radiusPin) + ((this.viewBoxWidth - this.sectorWidth) - (this._gauge.halfWidth + this._gauge.radiusPin)) / 2, 0, 5] // 20 / 4 = 5
+                valuePosition: [this.gauge.halfWidth, this.sectorWidth + (this.gauge.halfWidth - this.gauge.radiusPin - this.sectorWidth) / 2, 0, 15], // 36 / 4 + 6 = 15
+                unitsPosition: [this.gauge.halfWidth, (this.gauge.halfWidth + this.gauge.radiusPin) + ((this.viewBoxWidth - this.sectorWidth) - (this.gauge.halfWidth + this.gauge.radiusPin)) / 2, 0, 5] // 20 / 4 = 5
             },
             half: {
                 angle: 180,
                 heightViewBox: this.viewBoxHeight / 2 + 20,
-                valuePosition: [this._gauge.halfWidth, this.sectorWidth + (this._gauge.halfWidth - this._gauge.radiusPin - this.sectorWidth) / 2, 0, 9 + (this.units ? 0 : 6)], // 36 / 4 = 9
-                unitsPosition: [this._gauge.halfWidth, this._gauge.halfWidth - this._gauge.radiusPin, 0, -5]
+                valuePosition: [this.gauge.halfWidth, this.sectorWidth + (this.gauge.halfWidth - this.gauge.radiusPin - this.sectorWidth) / 2, 0, 9 + (this.units ? 0 : 6)], // 36 / 4 = 9
+                unitsPosition: [this.gauge.halfWidth, this.gauge.halfWidth - this.gauge.radiusPin, 0, -5]
             },
             arc: {
                 angle: 90,
                 heightViewBox: this.viewBoxHeight,
                 valuePosition: ["50%", this.viewBoxWidth - this.sectorWidth, 0, 9], // 36 / 4 = 9
-                unitsPosition: [this._gauge.halfWidth, this.sectorWidth + (this._gauge.halfWidth - this._gauge.radiusPin - this.sectorWidth) / 2, 0, 7] // 20 / 4 + 2 = 7
+                unitsPosition: [this.gauge.halfWidth, this.sectorWidth + (this.gauge.halfWidth - this.gauge.radiusPin - this.sectorWidth) / 2, 0, 7] // 20 / 4 + 2 = 7
             }
         };
-        Object.assign(this._gauge, styles[this.gaugeStyle] || styles.full);
+        Object.assign(this.gauge, styles[this.gaugeStyle] || styles.full);
 		
-		this._gauge.pointStart = this._gauge.angle / 2; // Начало сектора
-		this._gauge.pointEnd = 360 - this._gauge.angle; // Конец сектора
-		console.log(this._gauge.pointStart, this._gauge.pointEnd);
+		this.gauge.pointStart = this.gauge.angle / 2; // Начало сектора
+		this.gauge.pointEnd = 360 - this.gauge.angle; // Конец сектора
+		console.log(this.gauge.pointStart, this.gauge.pointEnd);
 	}
 
 	#gaugeSectorUpdate() {
@@ -312,8 +312,8 @@ class BUIRange2 extends BUIBaseWidget {
 			const endNorm = Math.max(this.minValue, Math.min(end, this.maxValue));
 			
 			// Вычисление смещений для dasharray
-			const fillStart = mathUtilities.mapRange(startNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart) + widthTicksStart;
-			const fillEnd = mathUtilities.mapRange(endNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart) - widthTicksEnd;
+			const fillStart = mathUtilities.mapRange(startNorm, this.minValue, this.maxValue, this.gauge.pointStart, 360 - this.gauge.pointStart) + widthTicksStart;
+			const fillEnd = mathUtilities.mapRange(endNorm, this.minValue, this.maxValue, this.gauge.pointStart, 360 - this.gauge.pointStart) - widthTicksEnd;
 
 			sectorIndex++;
 
@@ -327,13 +327,13 @@ class BUIRange2 extends BUIBaseWidget {
 		});
 
 		// Сохранение результатов
-		this._gauge.sectors = normalizedSectors.map(({fillStart, fillEnd, color}) => [fillStart, fillEnd, color]);
+		this.gauge.sectors = normalizedSectors.map(({fillStart, fillEnd, color}) => [fillStart, fillEnd, color]);
 	}
 
 
 	#gaugeValueUpdate() {
 		const valueNorm = Math.max(this.minValue, Math.min(this.maxValue, this.value)); 
-		this._gauge.angleValue = mathUtilities.mapRange(valueNorm, this.minValue, this.maxValue, this._gauge.pointStart, 360 - this._gauge.pointStart);
+		this.gauge.angleValue = mathUtilities.mapRange(valueNorm, this.minValue, this.maxValue, this.gauge.pointStart, 360 - this.gauge.pointStart);
 	}
 
 	#gaugeAnimate() {
@@ -341,11 +341,11 @@ class BUIRange2 extends BUIBaseWidget {
 		this.$('#hand')?.animate(
 			[
 				{
-					transformOrigin: `${this._gauge.halfWidth}px ${this._gauge.halfWidth}px`
+					transformOrigin: `${this.gauge.halfWidth}px ${this.gauge.halfWidth}px`
 				},
 				{
-					transform: `rotate(${this._gauge.angleValue}deg)`,
-					transformOrigin: `${this._gauge.halfWidth}px ${this._gauge.halfWidth}px`
+					transform: `rotate(${this.gauge.angleValue}deg)`,
+					transformOrigin: `${this.gauge.halfWidth}px ${this.gauge.halfWidth}px`
 				}
 			],
 			{
@@ -419,9 +419,9 @@ class BUIRange2 extends BUIBaseWidget {
 
 		//
 		const circleRect = this.getBoundingClientRect();
-    	this.centerX = circleRect.left + this._gauge.halfWidth;
-    	this.centerY = circleRect.top + this._gauge.halfWidth;
-    	this.radius = this._gauge.majorTicksRadius;
+    	this.centerX = circleRect.left + this.gauge.halfWidth;
+    	this.centerY = circleRect.top + this.gauge.halfWidth;
+    	this.radius = this.gauge.majorTicksRadius;
 
 		document.getElementById('log').innerHTML = `down`;
 	}
@@ -435,7 +435,7 @@ class BUIRange2 extends BUIBaseWidget {
 		// Стандартный угол от оси X (против ЧС)
 		let angleMath = Math.atan2(dy, dx);
 		// Преобразуем в угол по часовой стрелке от выбранного нуля
-		let relativeAngle = ((angleMath - this._gauge.zeroOffsetRAD) + (2 * Math.PI)) % (2 * Math.PI);
+		let relativeAngle = ((angleMath - this.gauge.zeroOffsetRAD) + (2 * Math.PI)) % (2 * Math.PI);
 		if (relativeAngle < 0) relativeAngle += 2 * Math.PI;
 
 		const angleDeg = (relativeAngle * 180) / Math.PI;
@@ -443,11 +443,11 @@ class BUIRange2 extends BUIBaseWidget {
 		//console.log(Math.round(angleDeg) + '°');
 		document.getElementById('log').innerHTML = `${Math.round(angleDeg)} °`;
 
-		const anglDegNorm = mathUtilities.mapRange(angleDeg, 0, 360, this._gauge.pointStart, 360 - this._gauge.pointStart);
+		const anglDegNorm = mathUtilities.mapRange(angleDeg, 0, 360, this.gauge.pointStart, 360 - this.gauge.pointStart);
 		console.log(anglDegNorm);
 
 		this.$('#gthumb').style.transform = `rotate(${anglDegNorm}deg)`;
-		this.$('#gthumb').style.transformOrigin = `${this._gauge.halfWidth}px ${this._gauge.halfWidth}px`;
+		this.$('#gthumb').style.transformOrigin = `${this.gauge.halfWidth}px ${this.gauge.halfWidth}px`;
 	}
 
 	#onGlobalPointerUp(event) {
@@ -495,7 +495,7 @@ class BUIRange2 extends BUIBaseWidget {
 		// Стандартный угол от оси X (против ЧС)
 		let angleMath = Math.atan2(dy, dx);
 		// Преобразуем в угол по часовой стрелке от выбранного нуля
-		let relativeAngle = ((angleMath - this._gauge.zeroOffsetRAD) + (2 * Math.PI)) % (2 * Math.PI);
+		let relativeAngle = ((angleMath - this.gauge.zeroOffsetRAD) + (2 * Math.PI)) % (2 * Math.PI);
 		if (relativeAngle < 0) relativeAngle += 2 * Math.PI;
 
 		const angleDeg = (relativeAngle * 180) / Math.PI;
@@ -504,7 +504,7 @@ class BUIRange2 extends BUIBaseWidget {
 		document.getElementById('log').innerHTML = `${Math.round(angleDeg)} °`;
 
 		this.$('#gthumb').style.transform = `rotate(${angleDeg}deg)`;
-		this.$('#gthumb').style.transformOrigin = `${this._gauge.halfWidth}px ${this._gauge.halfWidth}px`;
+		this.$('#gthumb').style.transformOrigin = `${this.gauge.halfWidth}px ${this.gauge.halfWidth}px`;
 	}
 
 	#onTouchEnd(event) {
@@ -518,30 +518,30 @@ class BUIRange2 extends BUIBaseWidget {
 
 	#templateGauge() {
 		return svg`
-		<svg viewBox="0 0 ${this.viewBoxWidth} ${this._gauge.heightViewBox}">
+		<svg viewBox="0 0 ${this.viewBoxWidth} ${this.gauge.heightViewBox}">
 			<!-- Цветные сектора -->
-			<g id="gauge-sections" fill="none" stroke-width="${this.sectorWidth}" transform="rotate(${this.zeroOffset} ${this._gauge.halfWidth} ${this._gauge.halfWidth})">
-				${this._gauge.sectors.map(
+			<g id="gauge-sections" fill="none" stroke-width="${this.sectorWidth}" transform="rotate(${this.zeroOffset} ${this.gauge.halfWidth} ${this.gauge.halfWidth})">
+				${this.gauge.sectors.map(
 					(item) => svg`
 						<circle
-							cx="${this._gauge.halfWidth}"
-							cy="${this._gauge.halfWidth}"
-							r="${this._gauge.majorTicksRadius}"
-							stroke-dasharray="0 ${item[0] * this._gauge.majorAngleToArc} ${(item[1] - item[0]) * this._gauge.majorAngleToArc} ${this._gauge.majorTicksCircumference}"
+							cx="${this.gauge.halfWidth}"
+							cy="${this.gauge.halfWidth}"
+							r="${this.gauge.majorTicksRadius}"
+							stroke-dasharray="0 ${item[0] * this.gauge.majorAngleToArc} ${(item[1] - item[0]) * this.gauge.majorAngleToArc} ${this.gauge.majorTicksCircumference}"
 							stroke="${item[2]}"
 						/>
 					`
 				)}
 			</g>
-			<g id="gauge-scale" transform="rotate(${this.zeroOffset} ${this._gauge.halfWidth} ${this._gauge.halfWidth})">
+			<g id="gauge-scale" transform="rotate(${this.zeroOffset} ${this.gauge.halfWidth} ${this.gauge.halfWidth})">
 				<g id="gthumb">
 					<!-- Ручка -->
 					<circle
 						id="thumb"
-						cx="${this._gauge.halfWidth + this._gauge.majorTicksRadius}"
-						cy="${this._gauge.halfWidth}"
+						cx="${this.gauge.halfWidth + this.gauge.majorTicksRadius}"
+						cy="${this.gauge.halfWidth}"
 						fill="var(--color-gray-800)"
-						r="${this._gauge.radiusPin}"
+						r="${this.gauge.radiusPin}"
 						stroke-width="1" 
 						stroke="var(--color-gray-400)"
 						@pointerdown=${this.#onPointerDown}
@@ -554,7 +554,7 @@ class BUIRange2 extends BUIBaseWidget {
 					<!-- Стрелка -->
 					<polygon
 						id="hand"
-						points="${this._gauge.pointsClockHand}"
+						points="${this.gauge.pointsClockHand}"
 						fill="var(--color-red-300)"
 						stroke-width="1"
 						stroke="var(--color-gray-800)"
@@ -563,10 +563,10 @@ class BUIRange2 extends BUIBaseWidget {
 					/>
 					<!-- Гвоздик -->
 					<circle
-						cx="${this._gauge.halfWidth}"
-						cy="${this._gauge.halfWidth}"
+						cx="${this.gauge.halfWidth}"
+						cy="${this.gauge.halfWidth}"
 						fill="var(--color-gray-800)"
-						r="${this._gauge.radiusPin}"
+						r="${this.gauge.radiusPin}"
 						stroke-width="1" 
 						stroke="var(--color-gray-400)"
 					/>
@@ -574,10 +574,10 @@ class BUIRange2 extends BUIBaseWidget {
 				<!-- Маска выреза -->
 				<mask id="mask-gauge" fill="#fff">
 					<circle
-						cx="${this._gauge.halfWidth}"
-						cy="${this._gauge.halfWidth}"
-						r="${this._gauge.majorTicksRadius}"
-						stroke-dasharray="0 ${(this._gauge.pointStart - 0.5) * this._gauge.majorAngleToArc} ${(this._gauge.pointEnd + 1) * this._gauge.majorAngleToArc} ${this._gauge.majorTicksCircumference}"
+						cx="${this.gauge.halfWidth}"
+						cy="${this.gauge.halfWidth}"
+						r="${this.gauge.majorTicksRadius}"
+						stroke-dasharray="0 ${(this.gauge.pointStart - 0.5) * this.gauge.majorAngleToArc} ${(this.gauge.pointEnd + 1) * this.gauge.majorAngleToArc} ${this.gauge.majorTicksCircumference}"
 						stroke="#fff"
 						stroke-width="${this.sectorWidth + 1}"
 						fill="none"
@@ -587,10 +587,10 @@ class BUIRange2 extends BUIBaseWidget {
 			<!-- Текущее значение в цифре -->
 			${this.visibleValueOff ? `` : svg`
 			<g fill="var(--colorValue)">
-				<text id="digit-value" x="${this._gauge.valuePosition[0]}" y="${this._gauge.valuePosition[1]}" dx="${this._gauge.valuePosition[2]}" dy="${this._gauge.valuePosition[3]}" text-anchor="middle" class="value">
-					${this._gauge.valueToDisplay}
+				<text id="digit-value" x="${this.gauge.valuePosition[0]}" y="${this.gauge.valuePosition[1]}" dx="${this.gauge.valuePosition[2]}" dy="${this.gauge.valuePosition[3]}" text-anchor="middle" class="value">
+					${this.gauge.valueToDisplay}
 				</text>
-				<text x="${this._gauge.unitsPosition[0]}" y="${this._gauge.unitsPosition[1]}" dx="${this._gauge.unitsPosition[2]}" dy="${this._gauge.unitsPosition[3]}" text-anchor="middle" class="units">
+				<text x="${this.gauge.unitsPosition[0]}" y="${this.gauge.unitsPosition[1]}" dx="${this.gauge.unitsPosition[2]}" dy="${this.gauge.unitsPosition[3]}" text-anchor="middle" class="units">
 					${this.units}
 				</text>
 			</g>

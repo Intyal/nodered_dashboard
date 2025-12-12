@@ -1,7 +1,7 @@
 import { svg, css } from '../js/lit-all.min.js';
 import { BUIBaseWidget, mathUtilities } from '../js/bui-base-widget.js';
 
-class BuiGaugeCircle2 extends BUIBaseWidget {
+class BUIRange2 extends BUIBaseWidget {
 	static defaults = {
 		size: [2, 2],
 		position: [0, 0],
@@ -37,16 +37,16 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		},
 		// Значение.
 		value: {
-			type: Number,
+			type: Number
 		},
 		// Значение для отображения.
 		valueToDisplay: {
 			attribute: 'display-value',
-			type: Number,
+			type: Number
 		},
 		// Единицы измерения
 		units: {
-			type: String,
+			type: String
 		},
 		// Минимальное и максимальное значение
 		minValue: {
@@ -60,7 +60,7 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		// Тип шкалы
 		gaugeStyle: {
 			attribute: 'gauge-style',
-			type: String,
+			type: String
 		},
 		zeroOffset: {
 			attribute: 'zero-offset',
@@ -94,12 +94,12 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		// Отображать ли значение
 		visibleValueOff: {
 			attribute: 'visible-value-off',
-			type: Boolean,
+			type: Boolean
 		},
 		// Отображать ли диапазоны
 		visibleRangeOff: {
 			attribute: 'visible-range-off',
-			type: Boolean,
+			type: Boolean
 		},
 	};
 
@@ -115,6 +115,10 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 			align-items: flex-end;
 
 			font-size: var(--font-size);
+		}
+		.svg {
+			width: 100%;
+			height: 100%;
 		}
 		.value {
 			font-size: 36px;
@@ -301,32 +305,21 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 	// -----
 
 	#templateGauge() {
-		// Цветные сектора
-		const sections = svg`
-			<g id="gauge-sections" fill="none" stroke-width="${this.sectorWidth}" transform="rotate(${this.zeroOffset} ${this.halfWidth} ${this.halfWidth})">
-				${this.gauge.normalizedSectors.map(
-					(item) => svg`
-						<circle
-							cx="${this.halfWidth}"
-							cy="${this.halfWidth}"
-							r="${this.gauge.majorTicksRadius}"
-							stroke-dasharray="0 ${item.fillStart * this.gauge.majorAngleToArc} ${(item.fillEnd - item.fillStart) * this.gauge.majorAngleToArc} ${this.gauge.majorTicksCircumference}"
-							stroke="${item.fillColor}"
-						/>
-					`
-				)}
-			</g>
+		// Трэк
+		const track = svg`
+			<line x1="0" y1="50%" x2="100%" y2="50%" stroke="var(--bui-background-line-color)" stroke-width="8" />
 		`;
-		// Текущее значение
-		const valueText = svg`
-			<g fill="var(--colorValue)">
-				<text id="digit-value" x="${this.styles[this.gaugeStyle].valuePosition.x}" y="${this.styles[this.gaugeStyle].valuePosition.y}" dx="${this.styles[this.gaugeStyle].valuePosition.dx}" dy="${this.styles[this.gaugeStyle].valuePosition.dy}" text-anchor="middle" class="value">
-					${this.valueToDisplay ? this.valueToDisplay : this.value}
-				</text>
-				<text x="${this.styles[this.gaugeStyle].unitsPosition.x}" y="${this.styles[this.gaugeStyle].unitsPosition.y}" dx="${this.styles[this.gaugeStyle].unitsPosition.dx}" dy="${this.styles[this.gaugeStyle].unitsPosition.dy}" text-anchor="middle" class="units">
-					${this.units}
-				</text>
-			</g>
+		// Ручка
+		const thumbs = svg`
+			<circle
+				id="thumb"
+				cx="25%"
+				cy="50%"
+				fill="var(--color-gray-800)"
+				r="${this.radiusPin}"
+				stroke-width="1" 
+				stroke="var(--color-gray-400)"
+			/>
 		`;
 		// Мин/Макс значения
 		const minmaxText = svg`
@@ -335,36 +328,11 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 				<text x="100%" y="100%" dx="0" dy="0" text-anchor="end" class="label-ranges">${this.maxValue}</text>
 			</g>
 		`;
-		//
-		const valueHand = svg`
-			<g transform="rotate(${this.zeroOffset} ${this.halfWidth} ${this.halfWidth})">
-				<!-- Стрелка -->
-				<polygon
-					id="hand"
-					points="${this.pointsClockHand}"
-					fill="var(--color-red-300)"
-					stroke-width="1"
-					stroke="var(--color-gray-800)"
-					stroke-opacity="0.3"
-					fill-opacity="0.8"
-				/>
-				<!-- Гвоздик -->
-				<circle
-					cx="${this.halfWidth}"
-					cy="${this.halfWidth}"
-					fill="var(--color-gray-800)"
-					r="${this.radiusPin}"
-					stroke-width="1" 
-					stroke="var(--color-gray-400)"
-				/>
-			</g>
-		`;
 
 		return svg`
-			<svg viewBox="0 0 ${this.viewBoxWidth} ${this.styles[this.gaugeStyle].heightViewBox}">
-				${sections}
-				${valueHand}
-				${this.visibleValueOff ? `` : valueText}
+			<svg class="svg">
+				${track}
+				${thumbs}
 				${this.visibleRangeOff ? `` : minmaxText}
 			</svg>
 		`;
@@ -385,6 +353,7 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 		let widthTicksStart = this.widthTicksLine;
 		let widthTicksEnd = this.widthTicksLine;
 
+		//console.log(this.sectors);
 		this.gauge.normalizedSectors = this.sectors.map(([start, end, color], index, array) => {
 			if (this.styles[this.gaugeStyle].angle != 0) {
 				if (index == 0) {
@@ -399,7 +368,7 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 			// Вычисление смещений для dasharray
 			const fillStart = mathUtilities.mapRange(startNorm, this.minValue, this.maxValue, this.styles[this.gaugeStyle].pointStart, 360 - this.styles[this.gaugeStyle].pointStart) + widthTicksStart;
 			const fillEnd = mathUtilities.mapRange(endNorm, this.minValue, this.maxValue, this.styles[this.gaugeStyle].pointStart, 360 - this.styles[this.gaugeStyle].pointStart) - widthTicksEnd;
-
+			//console.log(this.styles[this.gaugeStyle].pointStart);
 			const fillColor = color;
 
 			return {
@@ -432,4 +401,4 @@ class BuiGaugeCircle2 extends BUIBaseWidget {
 
 }
 
-customElements.define('bui-gauge-circle2', BuiGaugeCircle2);
+customElements.define('bui-range2', BUIRange2);

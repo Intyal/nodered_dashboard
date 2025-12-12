@@ -21,7 +21,7 @@
 
 <body>
 	<bui-book id="bui_book" tab-style="bottom">
-		<bui-page slot="pages" id="page1" class="panel-background-dot" number-cells="20">
+		<bui-page slot="pages" id="page1" class="panel-background-grid-lines" number-cells="20">
 			<bui-sticker type="group"  size="5 7">
 				<bui-sticker size="5 5">
 					<bui-string size="5 1" style="--font-size: 4em;">Кухня</bui-string>
@@ -79,24 +79,12 @@
 			<bui-sticker size="2 2" id="st7">
 				<bui-icon size="2 2" name="stars" style="--font-size: 3em;" id="i1"></bui-icon>
 			</bui-sticker>
-			<bui-sticker size="10 1" id="st8">
-				<bui-range size="3 1" min="0" max="100" value="50"></bui-range>
+			<bui-sticker size="20 8" id="st8">
+				<bui-range size="12 4" min="0" max="256" value="50" intervals="4" step="1" style="--color: aqua;"></bui-range>
 			</bui-sticker>
-			<bui-sticker size="10 10" id="st8">
-				<bui-range2 size="10 10" value="50" id="r3" gauge-style="arc" visible-value-off></bui-range2>
+			<bui-sticker size="14 6" id="st8">
+				<bui-range2 size="14 6" min="0" max="100" value="70" id="r3"></bui-range2>
 			</bui-sticker>
-			<!-- <bui-sticker size="20 10" id="st8">
-
-				<bui-range size="20 5"
-				mode="single"
-				min="0" max="100" value="50"
-				></bui-range>
-
-				<bui-range size="20 5"
-				mode="dual"
-				min="0" max="10" min-val="2" max-val="8"
-				></bui-range>
-			</bui-sticker> -->
 		</bui-page>
 	</bui-book>
 </body>

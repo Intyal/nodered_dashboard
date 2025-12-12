@@ -51,10 +51,17 @@ export class BUIBaseWidget extends LitElement {
 	}
 
 	// Метод для получения значения CSS-свойства
-	getCustomVariable(cssPropertie) {
-		if (this.#rule) {
-			return this.#rule.getPropertyValue(cssPropertie);
-		}
+	// getCustomVariable(cssPropertie) {
+	// 	if (this.#rule) {
+	// 		return this.#rule.getPropertyValue(cssPropertie);
+	// 	}
+	// }
+	getCssVariable(name) {
+		// Убедитесь, что элемент уже в DOM (иначе getComputedStyle может не сработать)
+		if (!this.isConnected) return null;
+		
+		const styles = getComputedStyle(this);
+		return styles.getPropertyValue(name).trim();
 	}
 
 	connectedCallback() {
