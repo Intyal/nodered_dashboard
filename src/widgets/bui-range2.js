@@ -1,9 +1,9 @@
-import { html, css, LitElement } from '../js/lit-all.min.js';
+import { html, css, svg, LitElement } from '../js/lit-all.min.js';
 import { BUIBaseWidget } from '../js/bui-base-widget.js';
 
 export class BUIRange2 extends BUIBaseWidget {
   static defaults = {
-    size: [0, 0],
+    size: [2, 2],
     position: [0, 0],
     min: 0,
     max: 100,
@@ -15,9 +15,8 @@ export class BUIRange2 extends BUIBaseWidget {
   };
 
   static properties = {
-    size: { type: Array },
-    position: { type: Array },
-    attrStyle: { attribute: 'style', type: String },
+    size: { type: Array, converter: (value) => value.split(' ').map(Number) },
+    position: { type: Array, converter: (value) => value.split(' ').map(Number) },
     min: { type: Number },
     max: { type: Number },
     value: { type: Number },
@@ -30,45 +29,47 @@ export class BUIRange2 extends BUIBaseWidget {
   static styles = css`
     :host {
       --color: lime;
+      grid-column-start: var(--left);
+      grid-row-start: var(--top);
+      grid-column-end: span var(--width);
+      grid-row-end: span var(--height);
+      display: flex;
+      overflow: hidden;
+      justify-content: center;
+      align-items: center;
+      font-size: var(--font-size);
+      color: var(--color);
+    }
+
+    .range {
       --thumb-size: 2em;
       --track-height: 10px;
       --track-color: grey;
       --progress-height: 16px;
 
-      grid-column-start: var(--left, 1);
-      grid-row-start: var(--top, 1);
-      grid-column-end: span var(--width, 1);
-      grid-row-end: span var(--height, 1);
-
-      display: flex;
-      overflow: hidden;
-      justify-content: center;
-      align-items: center;
-      font-size: var(--font-size, 16px);
-      color: var(--color);
-    }
-
-    .range {
       display: grid;
       align-items: center;
       width: 100%;
       height: 100%;
-      grid-template-columns: auto 1fr auto;
+      grid-auto-flow: row dense;
+      grid-template-columns: calc(var(--thumb-size) * 3) auto calc(var(--thumb-size) * 3);
       grid-template-rows: auto auto auto;
-      gap: 5px;
+      gap: 0;
       box-sizing: border-box;
+      margin: 5px 0;
     }
 
     .range-input {
       grid-column: 1 / -1;
       grid-row: 2;
-      appearance: none;
       background: transparent;
-      width: 100%;
+      outline: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
     }
 
     .range-input::-webkit-slider-thumb {
-      -webkit-appearance: none;
+      appearance: none;
       width: calc(var(--thumb-size) * 2);
       height: var(--thumb-size);
       border: none;
@@ -83,7 +84,7 @@ export class BUIRange2 extends BUIBaseWidget {
     }
 
     .range-input::-moz-range-thumb {
-      width: calc(var(--thumb-size) * 2);
+      width: var(--thumb-size);
       height: var(--thumb-size);
       border: none;
       border-radius: 15px;
@@ -98,48 +99,50 @@ export class BUIRange2 extends BUIBaseWidget {
 
     .range-input:disabled::-webkit-slider-thumb,
     .range-input:disabled::-moz-range-thumb {
-      box-shadow: 0 0 0 6px inset gray;
-      cursor: not-allowed;
+      box-shadow: 0 0 0 6px gray inset;
+      cursor: default;
     }
 
     .track {
+      grid-column: 2;
+      grid-row: 2;
       height: var(--track-height);
-      background-color: var(--track-color);
       border-radius: 10px;
+      background-color: var(--track-color);
     }
 
     .progress {
-      grid-column: 1;
+      grid-column: 2;
       grid-row: 2;
-      grid-column-end: 2;
+      width: calc((var(--value, 0) - var(--min, 0)) / (var(--max, 100) - var(--min, 0)) * 100%);
       height: var(--progress-height);
-      background-color: var(--color);
       border-radius: 10px;
-      z-index: 1;
+      background-color: var(--color);
     }
 
     .range-output {
       grid-column: 2;
       grid-row: 1;
       text-align: center;
-      font-size: 1.2em;
+      font-size: 6em;
       user-select: none;
       color: white;
+      transition: color 300ms;
     }
 
-    .range-input:hover + .range-output,
-    .range-input:focus-visible + .range-output {
+    .range-output:hover,
+    .range-output:focus-visible {
       color: var(--color);
-      transition: color 300ms;
     }
 
     .tickmarks {
       grid-column: 2;
       grid-row: 3;
       position: relative;
-      height: 24px;
-      font-size: 12px;
+      height: 30px;
       color: white;
+      font-size: 14px;
+      user-select: none;
     }
 
     .tick-label {
@@ -153,67 +156,129 @@ export class BUIRange2 extends BUIBaseWidget {
 
   constructor() {
     super();
-    // Инициализируем значения по умолчанию
-    Object.keys(this.constructor.defaults).forEach(key => {
-      this[key] = this.constructor.defaults[key];
-    });
-    this._lastColor = '';
+    this.intervals = 1;
+    this._thumbSvgCache = new Map();
   }
 
-  // --- Сеттеры с синхронизацией CSS-переменных ---
+  // --- Сеттеры ---
 
-  set size([w, h]) {
-    const width = w === 0 ? (this.parentElement?.offsetWidth || 100) : w;
-    const height = h === 0 ? (this.parentElement?.offsetHeight || 50) : h;
-    this._size = [width, height];
-    this.style.setProperty('--width', width);
-    this.style.setProperty('--height', height);
+  set size(value) {
+    this._size = this.validateAndSetArr(this.constructor.defaults.size, value);
+    this._updateSize();
   }
-  get size() {
-    return this._size;
-  }
+  get size() { return this._size; }
 
-  set position([x, y]) {
-    this._position = [x, y];
-    this.style.setProperty('--left', x);
-    this.style.setProperty('--top', y);
+  set position(value) {
+    this._position = this.validateAndSetArr(this.constructor.defaults.position, value);
+    this.updatingCustomVariables(['--left', '--top'], this._position);
   }
-  get position() {
-    return this._position;
-  }
+  get position() { return this._position; }
 
   // --- Жизненный цикл ---
 
   connectedCallback() {
     super.connectedCallback();
-    this.size = this._size; // Пересчитываем размеры
-    this._updateThumbIcon();
-    this._colorObserver = new MutationObserver(() => this._updateThumbIcon());
-    this._colorObserver.observe(this, { attributes: true, attributeFilter: ['style'] });
+    this._updateSize();
   }
 
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    if (this._colorObserver) {
-      this._colorObserver.disconnect();
+  willUpdate(changedProps) {
+    if (changedProps.has('min') || changedProps.has('max') || changedProps.has('intervals')) {
+      this._generateTickmarks();
     }
-  }
-
-  willUpdate(changedProperties) {
-    if (changedProperties.has('value') || changedProperties.has('min') || changedProperties.has('max')) {
-      this._updateProgress();
-    }
-    if (changedProperties.has('min') || changedProperties.has('max') || changedProperties.has('intervals')) {
-      this._generateTicks();
-    }
-    if (changedProperties.has('disabled')) {
-      this.renderRoot?.querySelector?.('.range-input')?.toggleAttribute('disabled', this.disabled);
+    if (changedProps.has('value')) {
+      this._lastValue = changedProps.get('value');
     }
   }
 
-  firstUpdated() {
-    this._updateProgress();
-    this._generateTicks();
+  updated(changedProps) {
+    if (changedProps.has('min') || changedProps.has('max') || changedProps.has('value') || changedProps.has('--color')) {
+      this._updateProgressStyle();
+    }
+    if (changedProps.has('--color')) {
+      this._updateThumbIcon();
+    }
+  }
+
+  // --- Приватные методы ---
+
+  _updateSize() {
+    const parentSize = this.parentElement?.innerSize || [0, 0];
+    const width = this._size[0] || parentSize[0];
+    const height = this._size[1] || parentSize[1];
+    this.updatingCustomVariables(['--width', '--height'], [width, height]);
+  }
+
+  _updateProgressStyle() {
+    this.style.setProperty('--value', this.value);
+    this.style.setProperty('--min', this.min);
+    this.style.setProperty('--max', this.max);
+  }
+
+  _updateThumbIcon() {
+    const color = this.getCssVariable('--color').trim() || 'lime';
+    if (!this._isValidColor(color)) {
+      console.warn('Invalid color, fallback to lime:', color);
+      return;
+    }
+
+    if (this._thumbSvgCache.has(color)) {
+      this.style.setProperty('--thumb-icon', this._thumbSvgCache.get(color));
+      return;
+    }
+
+    const svgStr = this._renderThumbSvg(color);
+    const dataUrl = `url("data:image/svg+xml,${encodeURIComponent(svgStr)}")`;
+    this._thumbSvgCache.set(color, dataUrl);
+    this.style.setProperty('--thumb-icon', dataUrl);
+  }
+
+  _renderThumbSvg(color) {
+    return `
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        <g fill="${color.replace(/"/g, '&quot;')}">
+          <rect x="7" y="7" width="3" height="10" rx="1"/>
+          <rect x="11" y="7" width="3" height="10" rx="1"/>
+          <rect x="15" y="7" width="3" height="10" rx="1"/>
+        </g>
+      </svg>
+    `.trim();
+  }
+
+  _isValidColor(color) {
+    const temp = document.createElement('div');
+    temp.style.color = color;
+    return temp.style.color !== '';
+  }
+
+  _generateTickmarks() {
+    if (this.intervals <= 0) {
+      this._tickLabels = [];
+      return;
+    }
+
+    const totalTicks = this.intervals + 1;
+    this._tickLabels = Array.from({ length: totalTicks }, (_, i) => {
+      const value = this.min + (this.max - this.min) * (i / this.intervals);
+      const percent = (i / this.intervals) * 100;
+      return { value, percent };
+    });
+  }
+
+  _handleInput(event) {
+    const newValue = Number(event.target.value);
+    if (this.value !== newValue) {
+      this.value = newValue;
+    }
+  }
+
+  _handlePointerUp(event) {
+    if (this._lastValue !== this.value) {
+      this.dispatchEvent(new CustomEvent('change', {
+        detail: { value: this.value },
+        bubbles: true,
+        composed: true
+      }));
+    }
   }
 
   // --- Рендер ---
@@ -222,76 +287,29 @@ export class BUIRange2 extends BUIBaseWidget {
     return html`
       <div class="range">
         <div class="track"></div>
-        <div class="progress" style="width: ${this._progressWidth}%;"></div>
+        <div class="progress"></div>
         <input
           class="range-input"
           type="range"
-          .value="${this.value}"
-          .min="${this.min}"
-          .max="${this.max}"
-          .step="${this.step}"
-          ?disabled="${this.disabled}"
-          @input="${this.#handleInput}"
-          aria-valuemin="${this.min}"
-          aria-valuemax="${this.max}"
-          aria-valuenow="${this.value}"
-        />
+          .min=${this.min}
+          .max=${this.max}
+          .value=${this.value}
+          .step=${this.step}
+          ?disabled=${this.disabled}
+          aria-valuemin=${this.min}
+          aria-valuemax=${this.max}
+          aria-valuenow=${this.value}
+          @input=${this._handleInput}
+          @pointerup=${this._handlePointerUp}
+        >
         <output class="range-output">${this.value}</output>
         <div class="tickmarks">
-          ${this._tickLabels}
+          ${this._tickLabels?.map(item => html`
+            <span class="tick-label" style="left: ${item.percent}%;">${item.value}</span>
+          `)}
         </div>
       </div>
     `;
-  }
-
-  // --- Приватные методы ---
-
-  #handleInput(event) {
-    const newValue = Number(event.target.value);
-    if (this.value !== newValue) {
-      this.value = newValue;
-      this._updateProgress();
-    }
-  }
-
-  _updateProgress() {
-    const range = this.max - this.min;
-    this._progressWidth = range === 0 ? 0 : ((this.value - this.min) / range) * 100;
-  }
-
-  _generateTicks() {
-    const count = Math.max(1, this.intervals);
-    const total = count + 1;
-    this._tickLabels = Array.from({ length: total }, (_, i) => {
-      const value = this.min + ((this.max - this.min) * i) / count;
-      const percent = (i / count) * 100;
-      return html`<span class="tick-label" style="left: ${percent}%">${value}</span>`;
-    });
-  }
-
-  _updateThumbIcon() {
-    const color = this.style.getPropertyValue('--color').trim() || 'lime';
-    if (color === this._lastColor) return;
-    this._lastColor = color;
-
-    // Санитизация цвета
-    if (!/^(#[0-9a-f]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)|[a-z]+)$/i.test(color)) {
-      console.warn('Invalid color value, fallback to lime:', color);
-      this.style.setProperty('--thumb-icon', '');
-      return;
-    }
-
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-        <g fill="${color}">
-          <rect x="7" y="7" width="3" height="10" rx="1"/>
-          <rect x="11" y="7" width="3" height="10" rx="1"/>
-          <rect x="15" y="7" width="3" height="10" rx="1"/>
-        </g>
-      </svg>
-    `;
-    const encoded = encodeURIComponent(svg.trim());
-    this.style.setProperty('--thumb-icon', `url("data:image/svg+xml,${encoded}")`);
   }
 }
 

@@ -3,6 +3,10 @@
  */
 @import url("./css/dark.css");
 
+* {
+	-webkit-tap-highlight-color: transparent;
+}
+
 html, body {
 	height: 100%;
 	margin: 0;

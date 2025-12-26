@@ -1,47 +1,22 @@
-/**
-Переменная					По умолчанию		Описание
---track-color				#e0e0e0				Цвет пустой дорожки
---progress-color-start		#007bff				Начало градиента заполнения
---progress-color-end		#28a745				Конец градиента заполнения
---thumb-color-min			#007bff				Цвет ползунка min (если не задан thumbSvgMin)
---thumb-color-max			#28a745				Цвет ползунка max/single (если не задан thumbSvgMax)
---tooltip-bg				#333				Фон подсказки
---tooltip-color				white				Цвет текста подсказки
---font-size, --color							Стандартные для BUI
---left, --top, --width, --height				Управляются через position и size
- */
-
-import { html, css, svg, unsafeHTML } from '../js/lit-all.min.js';
+import { html, css, svg } from '../js/lit-all.min.js';
 import { BUIBaseWidget } from '../js/bui-base-widget.js';
 
-/**
- * Расширенный кастомный слайдер (range input) с поддержкой:
- * - Одиночного и двойного режима (min/max)
- * - Горизонтальной и вертикальной ориентации
- * - Отключения (disabled)
- * - Кастомных SVG-ползунков
- * - Подсказки со значением при перетаскивании
- * - Полной поддержки мыши и сенсорных экранов
- * - Настройки цветов через CSS-переменные
- */
 export class BUIRange extends BUIBaseWidget {
 	/**
 	 * Значения по умолчанию для всех настраиваемых параметров.
 	 */
 	static defaults = {
-		size: [1, 2],
+		size: [2, 2],
 		position: [0, 0],
-		mode: 'single',        // 'single' | 'dual'
 		min: 0,
 		max: 100,
-		value: 50,
-		minVal: 25,
-		maxVal: 75,
+		value: 0,
 		step: 1,
-		orientation: 'horizontal', // 'horizontal' | 'vertical'
-		disabled: false,       // компонент отключён
-		thumbSvgMin: '',       // SVG-строка для min-ползунка (без <svg>)
-		thumbSvgMax: '',       // SVG-строка для max/single-ползунка
+		intervals: 1,
+		orientation: 'horizontal',
+		disabled: false,
+		visibleRangeOff: false,
+		visibleValueOff: false,
 	};
 
 	static properties = {
@@ -53,27 +28,51 @@ export class BUIRange extends BUIBaseWidget {
 			type: Array,
 			converter: (value) => value.split(' ').map(Number),
 		},
-		mode: { type: String },
-		min: { type: Number },
-		max: { type: Number },
-		value: { type: Number },
-		minVal: {
-			attribute: 'min-val',
+		min: {
 			type: Number,
 		},
-		maxVal: {
-			attribute: 'max-val',
+		max: {
 			type: Number,
 		},
-		step: { type: Number },
-		orientation: { type: String },
-		disabled: { type: Boolean },
-		thumbSvgMin: { type: String },
-		thumbSvgMax: { type: String },
+		value: {
+			type: Number,
+			reflect: true,
+		},
+		step: {
+			type: Number,
+		},
+		intervals: {
+			type: Number,
+		},
+		orientation: {
+			type: String,
+		},
+		disabled: {
+			type: Boolean,
+		},
+		// Отображать ли значение
+		visibleValueOff: {
+			attribute: 'visible-value-off',
+			type: Boolean,
+		},
+		// Отображать ли диапазоны
+		visibleRangeOff: {
+			attribute: 'visible-range-off',
+			type: Boolean,
+		},
 	};
 
 	static styles = css`
 		:host {
+			--color: lime;
+			--thumb-size: 6em;
+			--track-height: 1em;
+			--progress-height: 3em;
+			--range-output-font-size: 6em;
+			--tickmarks-font-size: 2.5em;
+			--track-color: grey;
+			--thumb-bg: var(--bui-widget-background-color);
+
 			grid-column-start: var(--left);
 			grid-row-start: var(--top);
 			grid-column-end: span var(--width);
@@ -83,437 +82,255 @@ export class BUIRange extends BUIBaseWidget {
 			overflow: hidden;
 			justify-content: center;
 			align-items: center;
-			font-size: var(--font-size);
 			color: var(--color);
 		}
 
-		/* Состояние: отключено */
-		:host([disabled]) {
-			opacity: 0.6;
-			pointer-events: none; /* Полностью блокирует взаимодействие */
-		}
-
-		/* Основной контейнер */
-		.wrapper {
-			position: relative;
+		.range {
+			display: grid;
 			width: 100%;
 			height: 100%;
-			touch-action: none; /* Критично для touch-устройств */
+			/* grid-auto-flow: row dense; */
+			grid-template-columns: var(--thumb-size) auto var(--thumb-size);
+			grid-template-rows: min-content minmax(var(--thumb-size), auto) min-content;
+			/* gap: 0; */
+			/* box-sizing: border-box; */
+			/* margin: 0.3em 0; */
+			align-items: center;
 		}
 
-		/* Скрытый <input> для семантики и доступности */
+		.track {
+			grid-column-start: 2;
+			grid-row-start: 2;
+			height: var(--track-height);
+			border-radius: 2em;
+			background-color: var(--track-color);
+		}
+
+		.progress {
+			grid-column-start: 2;
+			grid-row-start: 2;
+			width: calc((var(--value) - var(--min)) / (var(--max) - var(--min)) * 100%);
+			height: var(--progress-height);
+			border-radius: 2em;
+			background-color: var(--color);
+		}
+
+		.thumb-track-container {
+			grid-column-start: 2;
+			grid-row-start: 2;
+			position: relative;
+			/* width: 100%; */
+			/* height: 100%; */
+		}
+
 		.range-input {
-			opacity: 0;
 			position: absolute;
-			pointer-events: none;
-		}
-
-		/* Дорожка и прогресс — общие стили */
-		.range-track,
-		.range-progress {
-			position: absolute;
-			pointer-events: none;
-			border-radius: 2px;
-		}
-
-		/* === ГОРИЗОНТАЛЬНЫЙ РЕЖИМ (по умолчанию) === */
-		:host(:not([orientation="vertical"])) .wrapper {
-			height: 60px;
-		}
-		:host(:not([orientation="vertical"])) .range-track,
-		:host(:not([orientation="vertical"])) .range-progress {
-			top: 50%;
+			top: 0;
 			left: 0;
 			width: 100%;
-			height: 4px;
-			transform: translateY(-50%);
-		}
-
-		/* === ВЕРТИКАЛЬНЫЙ РЕЖИМ === */
-		:host([orientation="vertical"]) .wrapper {
-			width: 60px;
 			height: 100%;
-		}
-		:host([orientation="vertical"]) .range-track,
-		:host([orientation="vertical"]) .range-progress {
-			left: 50%;
-			top: 0;
-			width: 4px;
-			height: 100%;
-			transform: translateX(-50%);
-		}
-
-		/* Цвета через CSS-переменные с резервными значениями */
-		.range-track {
-			background: var(--track-color, #e0e0e0);
-		}
-
-		.range-progress {
-			background: linear-gradient(
-				to right,
-				var(--progress-color-start, #007bff),
-				var(--progress-color-end, #28a745)
-			);
-			transition: left 0.1s, width 0.1s, top 0.1s, height 0.1s;
-		}
-
-		:host([orientation="vertical"]) .range-progress {
-			background: linear-gradient(
-				to bottom,
-				var(--progress-color-start, #007bff),
-				var(--progress-color-end, #28a745)
-			);
-		}
-
-		/* Контейнер ползунка */
-		.thumb-container {
-			position: absolute;
-		}
-		:host(:not([orientation="vertical"])) .thumb-container {
-			top: 30px; /* 60px / 2 */
-		}
-		:host([orientation="vertical"]) .thumb-container {
-			left: 30px; /* 60px / 2 */
-		}
-
-		/* SVG-ползунок */
-		.range-thumb {
-			width: 32px;
-			height: 32px;
-			pointer-events: none;
-		}
-		:host(:not([orientation="vertical"])) .range-thumb {
-			position: absolute;
-			top: 50%;
-			transform: translateY(-50%);
-		}
-		:host([orientation="vertical"]) .range-thumb {
-			position: absolute;
-			left: 50%;
-			transform: translateX(-50%);
-		}
-
-		/* Подсказка (tooltip) */
-		.tooltip {
-			position: absolute;
-			background: var(--tooltip-bg, #333);
-			color: var(--tooltip-color, white);
-			font-size: 12px;
-			padding: 4px 8px;
-			border-radius: 4px;
-			white-space: nowrap;
 			opacity: 0;
-			pointer-events: none;
-			transition: opacity 0.15s ease;
+			-webkit-appearance: none;
+			-moz-appearance: none;
+			appearance: none;
+			cursor: pointer;
+			outline: none;
+			box-shadow: none;
 		}
-		:host(:not([orientation="vertical"])) .tooltip {
-			top: -36px;
-			left: 50%;
-			transform: translateX(-50%);
-		}
-		:host([orientation="vertical"]) .tooltip {
-			left: -40px;
-			top: 50%;
-			transform: translateY(-50%);
-		}
-		.tooltip.visible {
-			opacity: 1;
-		}
-  `;
 
-	/**
-	 * Конструктор: инициализация значений и состояния.
-	 */
+		.thumb {
+			position: absolute;
+			/* top: 50%; */
+			left: var(--thumb-left, 0);
+			transform: translateX(-50%) translateY(-50%);
+			pointer-events: none;
+			color: var(--color);
+			/* will-change: transform; */
+		}
+
+		.thumb svg {
+			display: block;
+			width: calc(var(--thumb-size) * 2);
+			height: var(--thumb-size);
+		}
+
+		.range-output {
+			grid-column-start: 2;
+			grid-row-start: 1;
+			text-align: center;
+			line-height: 1;
+			font-size: var(--range-output-font-size);
+			user-select: none;
+			color: white;
+		}
+
+		.thumb-track-container:hover ~ .range-output,
+		.thumb-track-container:focus-visible ~ .range-output {
+			color: var(--color);
+			transition: 300ms;
+		}
+
+		.tickmarks {
+			grid-column-start: 2;
+			grid-row-start: 3;
+			position: relative;
+			height: 1em;
+			color: white;
+			font-size: var(--tickmarks-font-size);
+			line-height: 1;
+			user-select: none;
+		}
+
+		.tick-label {
+			position: absolute;
+			left: var(--tick-pos, 0);
+			transform: translateX(-50%);
+			/* white-space: nowrap; */
+		}
+	`;
+
 	constructor() {
 		super();
+		Object.keys(this.constructor.defaults).forEach(key => {
+			this[key] = this.constructor.defaults[key];
+		});
 
-		Object.assign(this, this.defaults);
-
-		this._dragTarget = null; // 'single', 'min', 'max'
-		this._isDragging = false;
+		this.tickLabels = [];
 	}
+
+	// --- Сеттеры ---
 
 	set size(value) {
-		this._size = this.validateAndSetArr(this.defaults.size, value);
-		
-		// Изменение размеров под родителя, если значения равны 0.
-		if (this.parentElement) {
-			if (this._size[0] === 0) {
-				this._size[0] = this.parentElement?.innerSize[0];
-			}
-			if (this._size[1] === 0) {
-				this._size[1] = this.parentElement?.innerSize[1];
-			}
-		}
+		const validValue = this.validateAndSetArr(this.defaults.size, value);
+		const w = validValue[0] === 0 ? (this.parentElement?.innerSize?.[0] || this.defaults.size[0]) : validValue[0];
+		const h = validValue[1] === 0 ? (this.parentElement?.innerSize?.[1] || this.defaults.size[1]) : validValue[1];
+		this._size = [w, h];
 
+		// this._size = this.validateAndSetArr(this.defaults.size, value);
+		// if (this.parentElement) {
+		// 	if (this._size[0] === 0) this._size[0] = this.parentElement?.innerSize?.[0] ?? 2;
+		// 	if (this._size[1] === 0) this._size[1] = this.parentElement?.innerSize?.[1] ?? 2;
+		// }
 		this.updatingCustomVariables(['--width', '--height'], this._size);
 	}
-	get size() {
-		return this._size;
-	}
+	get size() { return this._size; }
 
 	set position(value) {
 		this._position = this.validateAndSetArr(this.defaults.position, value);
 		this.updatingCustomVariables(['--left', '--top'], this._position);
 	}
-	get position() {
-		return this._position;
+	get position() { return this._position; }
+
+	// --- Жизненный цикл ---
+
+	connectedCallback() {
+		super.connectedCallback();
+		// Только если size[0] или [1] === 0 — подстраиваем под родителя
+		// const w = this._size[0] === 0 ? (this.parentElement?.innerSize?.[0] || this.defaults.size[0]) : this._size[0];
+		// const h = this._size[1] === 0 ? (this.parentElement?.innerSize?.[1] || this.defaults.size[1]) : this._size[1];
+		// this.size = [w, h];
+		this.#generateTickmarks();
 	}
 
-	/**
-	 * Основной метод рендеринга.
-	 */
+	willUpdate(changedProperties) {
+		if (changedProperties.has('min') || changedProperties.has('max') || changedProperties.has('intervals')) {
+			this.#generateTickmarks();
+		}
+	}
+
+	// --- Рендер ---
+
+	renderThumb() {
+		return svg`
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50">
+				<rect x="0" y="0" width="100" height="50" rx="25" fill="var(--thumb-bg, #333)" />
+				<rect x="1" y="1" width="98" height="48" rx="25" fill="none" stroke="currentColor" stroke-width="3%" />
+				<rect x="30" y="15" width="6" height="20" rx="3" fill="currentColor" />
+				<rect x="47" y="15" width="6" height="20" rx="3" fill="currentColor" />
+				<rect x="64" y="15" width="6" height="20" rx="3" fill="currentColor" />
+			</svg>
+		`;
+	}
+
 	render() {
-		// Рендерит содержимое ползунка: кастомный SVG или стандартный круг
-		const renderThumbContent = (which) => {
-			const isMin = which === 'min';
-			const customSvg = isMin ? this.thumbSvgMin : this.thumbSvgMax;
-			const color = isMin
-				? 'var(--thumb-color-min, #007bff)'
-				: 'var(--thumb-color-max, #28a745)';
-
-			if (customSvg) {
-				// Вставляем SVG-строку как есть (опасная вставка, но контролируемая)
-				return html`<g>${unsafeHTML(customSvg)}</g>`;
-			} else {
-				// Стандартный круг
-				return svg`<circle cx="16" cy="16" r="14" fill="${color}" stroke="#fff" stroke-width="2"/>`;
-			}
-		};
-
-		// Рендерит ползунок с подсказкой
-		const renderThumbWithTooltip = (value, which) => {
-			// Подсказка видна только при перетаскивании и если не disabled
-			const isVisible = this._dragTarget === which && !this.disabled;
-			return html`
-				<div class="thumb-container">
-					<svg class="range-thumb" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-						${renderThumbContent(which)}
-					</svg>
-					<div class="tooltip ${isVisible ? 'visible' : ''}">${value}</div>
-				</div>
-			`;
-		};
-
-		const isVertical = this.orientation === 'vertical';
-
-		if (this.mode === 'dual') {
-			return html`
-				<div class="wrapper"
-					@pointerdown=${this._onPointerDown}
-					@pointermove=${this._onPointerMove}
-					@pointerup=${this._onPointerUp}
-					@pointercancel=${this._onPointerUp}
-				>
-					<!-- Семантический input -->
+		const percent = this.#getPercent();
+		return html`
+			<div class="range" style="--value: ${this.value}; --min: ${this.min}; --max: ${this.max};">
+				<div class="track"></div>
+				<div class="progress"></div>
+				<div class="thumb-track-container">
 					<input
-						type="range"
+						@input=${this.#handleInputRange}
+						@pointerup=${this.#onPointerUp}
 						class="range-input"
-						min=${this.min}
-						max=${this.max}
-						step=${this.step}
-						.value=${Math.round((this.minVal + this.maxVal) / 2)}
-						aria-label="Range selector"
-						?disabled=${this.disabled}
-						tabindex=${this.disabled ? "-1" : "-1"}
-						aria-hidden="true"
-					/>
-					<div class="range-track"></div>
-					<div class="range-progress" id="progress"></div>
-					${renderThumbWithTooltip(this.minVal, 'min')}
-					${renderThumbWithTooltip(this.maxVal, 'max')}
-				</div>
-			`;
-		} else {
-			return html`
-				<div class="wrapper"
-					@pointerdown=${this._onPointerDown}
-					@pointermove=${this._onPointerMove}
-					@pointerup=${this._onPointerUp}
-					@pointercancel=${this._onPointerUp}
-				>
-					<input
 						type="range"
-						class="range-input"
-						min=${this.min}
-						max=${this.max}
-						step=${this.step}
+						.min=${this.min}
+						.max=${this.max}
 						.value=${this.value}
-						aria-label="Value selector"
+						.step=${this.step}
 						?disabled=${this.disabled}
-						tabindex=${this.disabled ? "-1" : "0"}
+						aria-valuemin=${this.min}
+						aria-valuemax=${this.max}
+						aria-valuenow=${this.value}
 					/>
-					<div class="range-track"></div>
-					<div class="range-progress" id="progress"></div>
-					${renderThumbWithTooltip(this.value, 'single')}
+					<div class="thumb" style="--thumb-left: ${percent}%;" aria-hidden="true">
+						${this.renderThumb()}
+					</div>
 				</div>
+				${this.visibleValueOff ? `` : html`<output class="range-output">${this.value}</output>`}
+				${this.visibleRangeOff ? `` : html`<div class="tickmarks">${this.tickLabels}</div>`}
+			</div>
+		`;
+	}
+
+	updated(changedProperties) {
+		//this.#rangeAnimate
+	}
+
+	// --- Обработчики ---
+
+	#onPointerUp() {
+		//
+	}
+
+	#handleInputRange(event) {
+		const newValue = Number(event.target.value);
+		if (this.value !== newValue) {
+			this.value = newValue;
+		}
+	}
+
+	// --- Вспомогательные методы ---
+
+	#generateTickmarks() {
+		if (this.intervals <= 0) {
+			this.tickLabels = [];
+			return;
+		}
+		const tickCount = this.intervals;
+		const totalTicks = tickCount + 1;
+		this.tickLabels = Array.from({ length: totalTicks }, (_, i) => {
+			const value = this.min + (this.max - this.min) * (i / tickCount);
+			const percent = (i / tickCount) * 100;
+			return html`
+				<span class="tick-label" style="--tick-pos: ${percent}%;">${value}</span>
 			`;
-		}
-	}
-
-	/**
-	 * Начало перетаскивания.
-	 */
-	_onPointerDown(e) {
-		// Блокируем, если отключено
-		if (this.disabled) return;
-		if (e.button && e.button !== 0) return;
-		if (e.pointerType === 'touch') e.preventDefault();
-
-		const wrapper = this.shadowRoot.querySelector('.wrapper');
-		const rect = wrapper.getBoundingClientRect();
-		const isVertical = this.orientation === 'vertical';
-		const thumbSize = 32;
-
-		const trackLength = isVertical ? rect.height : rect.width;
-		const clickCoord = isVertical ? e.clientY - rect.top : e.clientX - rect.left;
-
-		const getCenter = (val) =>
-			((val - this.min) / (this.max - this.min)) * (trackLength - thumbSize) + thumbSize / 2;
-
-		if (this.mode === 'dual') {
-			const minCenter = getCenter(this.minVal);
-			const maxCenter = getCenter(this.maxVal);
-			if (Math.abs(clickCoord - minCenter) <= Math.abs(clickCoord - maxCenter)) {
-				this._dragTarget = 'min';
-				this._dragOffset = clickCoord - minCenter;
-			} else {
-				this._dragTarget = 'max';
-				this._dragOffset = clickCoord - maxCenter;
-			}
-		} else {
-			this._dragTarget = 'single';
-			const singleCenter = getCenter(this.value);
-			this._dragOffset = clickCoord - singleCenter;
-		}
-
-		this._isDragging = true;
-		this._onPointerMove(e);
-	}
-
-	/**
-	 * Движение при перетаскивании.
-	 */
-	_onPointerMove(e) {
-		if (!this._isDragging || !this._dragTarget || this.disabled) return;
-
-		const wrapper = this.shadowRoot.querySelector('.wrapper');
-		const rect = wrapper.getBoundingClientRect();
-		const isVertical = this.orientation === 'vertical';
-		const thumbSize = 32;
-
-		const cursorCoord = isVertical ? e.clientY - rect.top : e.clientX - rect.left;
-		let targetCenter = cursorCoord - this._dragOffset;
-
-		const minCenter = thumbSize / 2;
-		const maxCenter = (isVertical ? rect.height : rect.width) - thumbSize / 2;
-		targetCenter = Math.max(minCenter, Math.min(maxCenter, targetCenter));
-
-		const trackLength = isVertical ? rect.height : rect.width;
-		const ratio = (targetCenter - thumbSize / 2) / (trackLength - thumbSize);
-		let val = this.min + ratio * (this.max - this.min);
-		val = Math.round(val / this.step) * this.step;
-		val = Math.max(this.min, Math.min(this.max, val));
-
-		if (this.mode === 'dual') {
-			if (this._dragTarget === 'min') {
-				if (val > this.maxVal) val = this.maxVal;
-				this.minVal = val;
-			} else {
-				if (val < this.minVal) val = this.minVal;
-				this.maxVal = val;
-			}
-			this.dispatchEvent(new CustomEvent('range-changed', {
-				detail: { min: this.minVal, max: this.maxVal },
-				bubbles: true,
-				composed: true
-			}));
-		} else {
-			this.value = val;
-			this.dispatchEvent(new CustomEvent('value-changed', {
-				detail: { value: this.value },
-				bubbles: true,
-				composed: true
-			}));
-		}
-
-		this.requestUpdate();
-	}
-
-	/**
-	 * Завершение перетаскивания.
-	 */
-	_onPointerUp() {
-		this._isDragging = false;
-		this._dragTarget = null;
-		this.requestUpdate();
-	}
-
-	/**
-	 * Обновляет позицию визуальных элементов после изменения значений.
-	 */
-	_updateProgress() {
-		requestAnimationFrame(() => {
-			const wrapper = this.shadowRoot.querySelector('.wrapper');
-			if (!wrapper) return;
-
-			const isVertical = this.orientation === 'vertical';
-			const thumbSize = 32;
-			const trackLength = isVertical ? wrapper.offsetHeight : wrapper.offsetWidth;
-
-			const getPos = (val) =>
-				((val - this.min) / (this.max - this.min)) * (trackLength - thumbSize);
-
-			const progress = this.shadowRoot.getElementById('progress');
-			if (!progress) return;
-
-			if (this.mode === 'single') {
-				const pos = getPos(this.value);
-				if (isVertical) {
-					progress.style.top = '0';
-					progress.style.height = `${pos + thumbSize / 2}px`;
-				} else {
-					progress.style.left = '0';
-					progress.style.width = `${pos + thumbSize / 2}px`;
-				}
-
-				const container = this.shadowRoot.querySelector('.thumb-container');
-				if (container) {
-					if (isVertical) container.style.top = `${pos}px`;
-					else container.style.left = `${pos}px`;
-				}
-			} else {
-				const minPos = getPos(this.minVal);
-				const maxPos = getPos(this.maxVal);
-				if (isVertical) {
-					progress.style.top = `${minPos + thumbSize / 2}px`;
-					progress.style.height = `${Math.max(0, maxPos - minPos)}px`;
-				} else {
-					progress.style.left = `${minPos + thumbSize / 2}px`;
-					progress.style.width = `${Math.max(0, maxPos - minPos)}px`;
-				}
-
-				const containers = this.shadowRoot.querySelectorAll('.thumb-container');
-				if (containers[0]) {
-					if (isVertical) containers[0].style.top = `${minPos}px`;
-					else containers[0].style.left = `${minPos}px`;
-				}
-				if (containers[1]) {
-					if (isVertical) containers[1].style.top = `${maxPos}px`;
-					else containers[1].style.left = `${maxPos}px`;
-				}
-			}
 		});
 	}
 
-	updated() {
-		this._updateProgress();
+	#getPercent() {
+		const range = this.max - this.min;
+		return range === 0 ? 0 : ((this.value - this.min) / range) * 100;
 	}
 
-	updatePosition() {
-		this._updateProgress();
+	#rangeAnimate() {
+		const percent = this.#getPercent();
+		const thumb = this.$('.thumb');
+		const progress = this.$('.progress');
+	  
+		thumb?.animate({ left: `${percent}%` }, { duration: 1000, easing: 'ease', fill: 'forwards' });
+		progress?.animate({ width: `${percent}%` }, { duration: 1000, easing: 'ease', fill: 'forwards' });
 	}
 }
 
-// Регистрация компонента
 customElements.define('bui-range', BUIRange);

@@ -6,7 +6,6 @@ export class BuiClick extends BUIBaseWidget {
 		target: '',
 		event: '',
 		action: 'none',
-		actionLong: 'none',
 		data: '',
 		params: '{}',
 		actionClass: '',
@@ -14,70 +13,20 @@ export class BuiClick extends BUIBaseWidget {
 	};
 
 	static properties = {
-		// ID целевого элемента для привязки события
-		target: {
-			type: String,
-		},
-		event: {
-			type: String,
-		},
-		// Тип реакции на короткое нажатие
-		action: {
-			type: String,
-		},
-		// Данные для разных типов действий
-		data: {
-			type: String,
-		},
-		// Дополнительные параметры в формате JSON
-		params: {
-			type: String,
-		},
-		// CSS класс для целевого элемента
-		actionClass: {
-			attribute: 'action-class',
-			type: String,
-		},
-		// Тип реакции на долгое нажатие
-		actionLong: {
-			attribute: 'action-long',
-			type: String,
-		},
-		// Данные для разных типов действий
-		dataLong: {
-			attribute: 'data-long',
-			type: String,
-		},
-		// Дополнительные параметры в формате JSON
-		paramsLong: {
-			attribute: 'params-long',
-			type: String,
-		},
+		target: { type: String },
+		event: { type: String },
+		action: { type: String },
+		data: { type: String },
+		params: { type: String },
+		actionClass: { attribute: 'action-class', type: String },
 	};
 
-	static styles = css`
-		:host {
-			display: none;
-		}
-	`;
+	static styles = css`:host { display: none; }`;
 
 	constructor() {
 		super();
-
 		Object.assign(this, this.defaults);
-
-		this._targetElement = null;
-		this._pressTimer = null;
-		this._isLongPress = false;
-		this._activePointerId = null;
-		this._startX = 0;
-		this._startY = 0;
-
-		this._boundPointerDown = this._handlePointerDown.bind(this);
-
-		this._boundGlobalPointerUp = this._handleGlobalPointerUp.bind(this);
-		this._boundGlobalPointerCancel = this._handleGlobalPointerCancel.bind(this);
-		this._boundGlobalPointerMove = this._handleGlobalPointerMove.bind(this);
+		this._controller = null; // для управления слушателями
 	}
 
 	render() {
@@ -87,6 +36,7 @@ export class BuiClick extends BUIBaseWidget {
 	connectedCallback() {
 		super.connectedCallback();
 		this._bindEventHandler();
+
 	}
 
 	disconnectedCallback() {
@@ -96,10 +46,7 @@ export class BuiClick extends BUIBaseWidget {
 
 	updated(changedProperties) {
 		super.updated(changedProperties);
-
-		if (changedProperties.has('target') ||
-			changedProperties.has('action') ||
-			changedProperties.has('data')) {
+		if (changedProperties.has('target')) {
 			this._unbindEventHandler();
 			this._bindEventHandler();
 		}
@@ -108,259 +55,136 @@ export class BuiClick extends BUIBaseWidget {
 	_bindEventHandler() {
 		if (!this.target) return;
 
-		this._targetElement = document.getElementById(this.target);
-		if (!this._targetElement) {
+		const target = document.getElementById(this.target);
+		if (!target) {
 			console.warn(`BuiClick: Элемент "${this.target}" не найден`);
 			return;
 		}
+		// Чтобы на мобилках работал pointerup
+		target.style.touchAction = 'none';
 
-		this._targetElement.addEventListener('pointerdown', this._boundPointerDown, { passive: false });
-
+		// Применяем классы
 		if (this.actionClass) {
-			this.actionClass.split(" ").forEach(cls => this._targetElement.classList.add(cls));
+			target.classList.add(...this.actionClass.split(' '));
 		}
+
+		// Используем AbortController для автоматической отмены
+		this._controller = new AbortController();
+		const { signal } = this._controller;
+
+		target.addEventListener('pointerdown', (e) => this._handlePointerDown(e, target), {
+			passive: false,
+			signal,
+		});
 	}
 
 	_unbindEventHandler() {
-		// Отменяем всё, что может быть активно
-		this._cancelPress();
-		this._activePointerId = null;
-
-		if (this._targetElement) {
-			this._targetElement.removeEventListener('pointerdown', this._boundPointerDown);
-			this._targetElement = null;
+		if (this._controller) {
+			this._controller.abort(); // автоматически убирает все слушатели
+			this._controller = null;
 		}
 
-		// На всякий случай убираем глобальные слушатели (хотя {once} должен был их убрать)
-		window.removeEventListener('pointermove', this._boundGlobalPointerMove);
+		// Убираем классы (опционально)
+		if (this.target && this.actionClass) {
+			const target = document.getElementById(this.target);
+			if (target) {
+				this.actionClass.split(' ').forEach(cls => target.classList.remove(cls));
+			}
+		}
 	}
 
-	_handlePointerDown(event) {
+	_handlePointerDown(event, target) {
 		if (event.button !== undefined && event.button !== 0) return;
-		event.preventDefault();
+		//event.preventDefault(); // важно для тача
 
-		// Защита: если уже активно нажатие — игнорируем
-		//if (this._activePointerId !== null) return;
+		const startX = event.clientX;
+		const startY = event.clientY;
+		let isLongPress = false;
+		let pressTimer = null;
 
-		this._startX = event.clientX;
-		this._startY = event.clientY;
-		this._isLongPress = false;
+		const MOVE_THRESHOLD = 20;
+		let isActive = true;
 
-		// Запоминаем ID указателя (для мультитача)
-		this._activePointerId = event.pointerId;
-
-		this._pressTimer = setTimeout(() => {
-			this._isLongPress = true;
-			this.onLongPress(event);
+		// Долгое нажатие
+		pressTimer = setTimeout(() => {
+			isLongPress = true;
+			isActive = false;
+			this._triggerAction(event, 'longPress');
 		}, this.duration);
 
-		// Вешаем pointerup и pointermove на window, чтобы ловить отпускание везде
-		window.addEventListener('pointerup', this._boundGlobalPointerUp, { once: true });
-		window.addEventListener('pointercancel', this._boundGlobalPointerCancel, { once: true });
-		window.addEventListener('pointermove', this._boundGlobalPointerMove, { passive: false });
-	}
-
-	_handleGlobalPointerMove(event) {
-		// Игнорируем события от других указателей (при мультитаче)
-		if (event.pointerId !== this._activePointerId) return;
-
-		if (this._isLongPress) return;
-
-		const MOVE_THRESHOLD = 10;
-		const dx = Math.abs(event.clientX - this._startX);
-		const dy = Math.abs(event.clientY - this._startY);
-
-		if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
-			this._cancelPress();
-		}
-	}
-
-	_handleGlobalPointerUp(event) {
-		// Убираем move-слушатель (он не {once})
-		window.removeEventListener('pointermove', this._boundGlobalPointerMove);
-
-		// Игнорируем другие указатели
-		if (event.pointerId !== this._activePointerId) return;
-
-		if (!this._isLongPress) {
-			this._cancelPress(); // очищаем таймер
-			this.onShortPress(event);
-		}
-	}
-
-	_handleGlobalPointerCancel(event) {
-		window.removeEventListener('pointermove', this._boundGlobalPointerMove);
-		if (event.pointerId === this._activePointerId) {
-			this._cancelPress();
-		}
-	}
-
-	_cancelPress() {
-		if (this._pressTimer) {
-			clearTimeout(this._pressTimer);
-			this._pressTimer = null;
-		}
-		this._isLongPress = true; // блокируем последующие вызовы
-	}
-
-	onShortPress(event) {
-		//console.log('Событие:', event);
-		//console.log('Тип указателя:', event.pointerType); // 'mouse', 'touch', 'pen'
-		//console.log('Координаты:', event.clientX, event.clientY);
-		if (this.event === 'shortPress') {
-			this._switchAction(event, this.action, this.data, JSON.parse(this.params || '{}'));
-		}
-	}
-
-	onLongPress(event) {
-		//console.log(`Долгое нажатие на элементе ${this.target}`, event);
-		if (this.event === 'longPress') {
-			this._switchAction(event, this.action, this.data, JSON.parse(this.params || '{}'));
-		}
-	}
-
-	_switchAction(event, action, data, params) {
-		try {
-			//const params = JSON.parse(this.params || '{}');
-
-			switch (action) {
-				case 'none':
-					console.log(`Нет действия`);
-					break;
-				case 'topic-set':
-					this._changeTopic(data, params);
-					break;
-				case 'message':
-					this._sendMessage(data, params);
-					break;
-				case 'open-page':
-					this._openPage(data, params);
-					break;
-				case 'close-active-page':
-					this._closePage(null, params);
-					break;
-				case 'state':
-					this._toggleState(data, params);
-					break;
-				case 'custom':
-					this._executeCustomAction(data, params);
-					break;
-				default:
-					console.warn(`BuiClick: Не известный тип действия "${action}"`);
+		// Обработчики завершения
+		const handleEnd = (endEvent) => {
+			//if (!isActive) return;
+			isActive = false;
+			clearTimeout(pressTimer);
+			if (!isLongPress) {
+				this._triggerAction(event, 'shortPress');
 			}
+			this._triggerAction(event, 'up');
+		};
+
+		const handleMove = (moveEvent) => {
+			if (!isActive) return;
+			const dx = Math.abs(moveEvent.clientX - startX);
+			const dy = Math.abs(moveEvent.clientY - startY);
+			if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
+				isActive = false;
+				clearTimeout(pressTimer);
+			}
+		};
+
+		// Вешаем глобальные слушатели
+		window.addEventListener('pointerup', handleEnd, { once: true });
+		window.addEventListener('pointercancel', handleEnd, { once: true });
+		window.addEventListener('pointermove', handleMove, { passive: false });
+	}
+
+	_triggerAction(event, type) {
+		if (this.event !== type) return;
+
+		const data = this.data || event.target?.value;
+		try {
+			const params = JSON.parse(this.params || '{}');
+			this._dispatchAction(this.action, data, params);
 		} catch (error) {
-			console.error('BuiClick: Ошибка при разборе параметров JSON:', error);
+			console.error('BuiClick: Ошибка при разборе JSON:', error);
 		}
 	}
 
-	_changeTopic(value, params) {
-		if (!value) return;
+	_dispatchAction(action, data, params) {
+		if (action === 'none') return;
 
-		const event = new CustomEvent('index:topic-set', {
-			detail: {
-				value: value,
-				params: params,
-				source: this.id
-			},
+		// Карта действий → событий
+		const eventMap = {
+			'topic-set': 'index:topic-set',
+			'open-page': 'bui-book:open-page',
+			'close-active-page': 'bui-page:select',
+			'message': 'index:message',
+			'state': 'index:topic-toggle',
+		};
+
+		const eventName = eventMap[action];
+		if (!eventName) {
+			console.warn(`BuiClick: Неизвестное действие "${action}"`);
+			return;
+		}
+
+		// Формируем detail
+		let detail = { source: this.id, params };
+		if (action === 'topic-set') {
+			detail.value = data;
+		} else if (action === 'open-page') {
+			detail.page = data;
+		} else if (action === 'close-active-page') {
+			detail.page = null;
+		}
+		console.log(detail);
+
+		this.dispatchEvent(new CustomEvent(eventName, {
+			detail,
 			bubbles: true,
-			composed: true
-		});
-
-		//console.log(`BuiClick: Передать значение "${value}" в свойство ${params.property} топика "${params.topic} ".`, params);
-		this.dispatchEvent(event);
-	}
-
-	_sendMessage(message, params) {
-		if (!message) return;
-
-		// Отправляем кастомное событие с сообщением
-		const event = new CustomEvent('index:message', {
-			detail: {
-				message: message,
-				params: params,
-				source: this.id
-			},
-			bubbles: true,
-			composed: true
-		});
-
-		//console.log(`BuiClick: Message sent - "${message}"`, params);
-		this.dispatchEvent(event);
-	}
-
-	// Смена страницы
-	_openPage(pageName, params) {
-		if (!pageName) return;
-
-		// Отправляем событие смены страницы
-		const event = new CustomEvent('bui-book:open-page', {
-			detail: {
-				page: pageName,
-				//saveSelected: true,
-				params: params,
-			},
-			bubbles: true,
-			composed: true
-		});
-
-		//console.log(`BuiClick: Выбор страницы`, pageName, params, this.target);
-		this.dispatchEvent(event);
-	}
-
-	// 
-	_closePage(pageName = null, params) {
-
-		// Отправляем событие смены страницы
-		const event = new CustomEvent('bui-page:select', {
-			detail: {
-				page: pageName,
-				//saveSelected: false,
-				params: params,
-			},
-			bubbles: true,
-			composed: true
-		});
-
-		//console.log(`BuiClick: Выбор страницы`, pageName, params, this.target);
-		this.dispatchEvent(event);
-	}
-
-	_toggleState(stateName, params) {
-		if (!stateName) return;
-
-		// Переключаем состояние через кастомное событие
-		// params='{"topic": "zigbee2mqtt/light_switch_hall", "property": "state", "states": "[ON, OFF]", "current": "OFF"}'
-		const event = new CustomEvent('index:topic-toggle', {
-			detail: {
-				state: stateName,
-				value: params.value,
-				toggle: params.toggle !== false,
-				source: this.id
-			},
-			bubbles: true,
-			composed: true
-		});
-
-		this.dispatchEvent(event);
-		//console.log(`BuiClick: State "${stateName}" toggled`, params);
-	}
-
-	_executeCustomAction(actionName, params) {
-		if (!actionName) return;
-
-		// Выполняем кастомное действие
-		const event = new CustomEvent('index:custom-action', {
-			detail: {
-				action: actionName,
-				params: params,
-				source: this.id
-			},
-			bubbles: true,
-			composed: true
-		});
-
-		this.dispatchEvent(event);
-		//console.log(`BuiClick: Custom action "${actionName}" executed`, params);
+			composed: true,
+		}));
 	}
 }
 
