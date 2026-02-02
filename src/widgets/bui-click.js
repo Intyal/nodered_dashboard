@@ -35,7 +35,7 @@ export class BuiClick extends BUIBaseWidget {
 
 	connectedCallback() {
 		super.connectedCallback();
-		this._bindEventHandler();
+		//this._bindEventHandler();
 
 	}
 
@@ -72,10 +72,25 @@ export class BuiClick extends BUIBaseWidget {
 		this._controller = new AbortController();
 		const { signal } = this._controller;
 
-		target.addEventListener('pointerdown', (e) => this._handlePointerDown(e, target), {
-			passive: false,
-			signal,
-		});
+		// Вешаем обработчики нажатия, если указано соответствующее событие
+		if (['longPress', 'shortPress', 'upPress'].includes(this.event)) {
+			target.addEventListener('pointerdown', (e) => this._handlePointerDown(e, target), {
+				passive: false,
+				signal,
+			});
+		}
+
+		// Слушаем событие bui-data-update от виджетов
+		if (['changeValue'].includes(this.event)) {
+			this.ownerDocument.addEventListener('bui-data-update', (event) => {
+				const widgetId = event.detail.element.id;
+				// Если событие от заданного (this.target) виджета
+				if (widgetId === this.target) {
+					//console.log('bui-click получил:', event);
+					this._triggerAction(event, 'changeValue'); // Изменение значения
+				}
+			});
+		}
 	}
 
 	_unbindEventHandler() {
@@ -84,7 +99,7 @@ export class BuiClick extends BUIBaseWidget {
 			this._controller = null;
 		}
 
-		// Убираем классы (опционально)
+		// Убираем классы
 		if (this.target && this.actionClass) {
 			const target = document.getElementById(this.target);
 			if (target) {
@@ -105,11 +120,10 @@ export class BuiClick extends BUIBaseWidget {
 		const MOVE_THRESHOLD = 20;
 		let isActive = true;
 
-		// Долгое нажатие
 		pressTimer = setTimeout(() => {
 			isLongPress = true;
 			isActive = false;
-			this._triggerAction(event, 'longPress');
+			this._triggerAction(event, 'longPress'); // Долгое нажатие
 		}, this.duration);
 
 		// Обработчики завершения
@@ -118,9 +132,9 @@ export class BuiClick extends BUIBaseWidget {
 			isActive = false;
 			clearTimeout(pressTimer);
 			if (!isLongPress) {
-				this._triggerAction(event, 'shortPress');
+				this._triggerAction(event, 'shortPress'); // Короткое нажатие
 			}
-			this._triggerAction(event, 'up');
+			this._triggerAction(event, 'upPress'); // Поднятие пальца
 		};
 
 		const handleMove = (moveEvent) => {

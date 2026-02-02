@@ -124,7 +124,7 @@ export class BUIPage extends BUIBaseWidget {
 						// Сохранять открытую страницу как выбранную
 						if (!this.tmp) {
 							// Выделяем закладку выбранной страницы
-							this.activeLabels(this.id);
+							this.activeLabels(event.detail.page === this.id ? this.id : this.label);
 							// Записываем выбранную страницу в localStorage
 							window.localStorage.setItem(`${window.location.pathname}selectedPage`, this.id);
 						}
@@ -159,9 +159,9 @@ export class BUIPage extends BUIBaseWidget {
 		// Ставим/убираем атрибут active для всех элементов с классом bookmarks в bui-page slot="bookmarks"
 		const labelsAll = document.querySelectorAll('.bookmark-a-page');
 		labelsAll.forEach(label => {
-			label.removeAttribute('active')
+			label.removeAttribute('active');
 		});
-		//console.log(labelsAll);
+		//console.log(pageId);
 		const labelsSelected = document.querySelectorAll(`.bookmark-a-page.${pageId}`);
 		labelsSelected.forEach(label => {
 			label.setAttribute('active', '');

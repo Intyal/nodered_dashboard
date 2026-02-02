@@ -289,8 +289,21 @@ export class BUIRange extends BUIBaseWidget {
 
 	// --- Обработчики ---
 
-	#onPointerUp() {
+	// Генерируем событие при изменении значения
+	#onPointerUp(event) {
 		//
+		const value = this.value;
+		//console.log(value);
+		if (event.button === 0) {
+			// Генерируем кастомное событие с данными
+			this.dispatchEvent(
+				new CustomEvent('bui-data-update', {
+				detail: { value, element: this },
+				bubbles: true,     // чтобы событие всплывало
+				composed: true     // чтобы вышло за пределы shadow DOM
+				})
+			);
+		}
 	}
 
 	#handleInputRange(event) {
